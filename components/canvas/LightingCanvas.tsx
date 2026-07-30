@@ -418,7 +418,7 @@ function FocusCone({ el }: { el: CanvasElement }) {
 // ── MAIN CANVAS ───────────────────────────────────────────
 export default function LightingCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<unknown>(null);
+  const stageRef = useRef<any>(null);
   const isSpaceRef = useRef(false);
   const isPanningRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
@@ -699,7 +699,7 @@ export default function LightingCanvas() {
       )}
 
       <Stage
-        ref={stageRef as React.RefObject<unknown>}
+        ref={stageRef as any}
         width={dimensions.width}
         height={dimensions.height}
         x={stageX}
