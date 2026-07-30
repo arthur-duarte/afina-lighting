@@ -62,6 +62,56 @@
 }
 
 /* ============================================================
+   LIGHT MODE (Modo Claro de Impressão e Montagem Diurna)
+   ============================================================ */
+.light-mode body {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.light-mode .editor-layout {
+  background-color: #f1f5f9 !important;
+}
+
+.light-mode .editor-topbar,
+.light-mode .editor-assets,
+.light-mode .editor-inspector,
+.light-mode .editor-seal {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.light-mode .editor-topbar span,
+.light-mode .editor-assets span,
+.light-mode .editor-inspector span,
+.light-mode .editor-seal span,
+.light-mode .panel-label {
+  color: #334155 !important;
+}
+
+.light-mode .canvas-wrapper {
+  --canvas-bg: #f8fafc;
+  background-color: #f8fafc !important;
+  background-image: radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1px) !important;
+}
+
+.light-mode .input-field,
+.light-mode .select-field {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light-mode .icon-btn {
+  color: #475569 !important;
+}
+.light-mode .icon-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
    EDITOR LAYOUT — Grid principal
    ============================================================ */
 .editor-layout {

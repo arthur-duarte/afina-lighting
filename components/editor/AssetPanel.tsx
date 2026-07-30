@@ -44,6 +44,28 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
   const store = useEditorStore();
 
   const handleClick = () => {
+    const def = getFixtureDef(type);
+    const id = store.addElement({
+      type,
+      category: def?.category ?? 'conventional',
+      layerId: def?.defaultLayerId ?? 'layer_lighting',
+      x: 350,
+      y: 250,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      label: def?.label ?? '',
+      color: def?.colorHex ?? '#facc15',
+      gelatin: 'NC',
+      wattage: def?.defaultWattage ?? 1000,
+      phase: 'unassigned',
+      angle: def?.defaultAngle,
+      locked: false,
+      visible: true,
+      dmx: def?.defaultDmxFootprint ? { universe: 1, address: 1, footprint: def.defaultDmxFootprint, hasConflict: false } : undefined,
+      customProps: type === 'lightingbar' ? { width: 300, height: 8 } : type.startsWith('truss') ? { width: 200, height: 12 } : {},
+    });
+    store.selectElement(id);
     store.setActiveTool('insert_fixture', type);
   };
 
@@ -76,11 +98,9 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
 
 // ── STAGE PRESET CARD ─────────────────────────────────────
 function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
-  const { addElement, clearCanvas } = useEditorStore();
+  const { addElement } = useEditorStore();
 
   const handleLoad = () => {
-    if (!confirm(`Carregar preset "${preset.name}"? O canvas atual será substituído.`)) return;
-    clearCanvas();
     preset.elements.forEach((el) => addElement({ ...el }));
   };
 
@@ -97,6 +117,81 @@ function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
         <div className="text-[10px] text-white/35 truncate">{preset.description}</div>
       </div>
     </button>
+  );
+}
+
+// ── CUSTOM STAGE BUILDER FORM ─────────────────────────────
+function CustomStageForm() {
+  const { addElement, selectElement } = useEditorStore();
+  const [widthM, setWidthM] = useState(10);
+  const [depthM, setDepthM] = useState(7);
+  const [varandaM, setVarandaM] = useState(2);
+
+  const handleCreateStage = () => {
+    const widthPx = widthM * 50;
+    const depthPx = depthM * 50;
+    const varandaPx = varandaM * 50;
+
+    const id = addElement({
+      type: 'custom_stage',
+      category: 'architecture',
+      layerId: 'layer_architecture',
+      x: 400,
+      y: 250,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      label: `Palco ${widthM}m x ${depthM}m`,
+      color: '#38bdf8',
+      gelatin: 'NC',
+      wattage: 0,
+      phase: 'unassigned',
+      locked: false,
+      visible: true,
+      customProps: { width: widthPx, height: depthPx, varanda: varandaPx },
+    });
+    selectElement(id);
+  };
+
+  return (
+    <div className="px-3 py-2 border-t border-editor-border bg-editor-raised/50 space-y-2 mt-1">
+      <div className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Palco com Dimensões Personalizadas</div>
+      <div className="grid grid-cols-3 gap-1.5">
+        <div>
+          <label className="text-[9px] text-white/40 block">Largura (m)</label>
+          <input
+            type="number"
+            value={widthM}
+            onChange={(e) => setWidthM(Math.max(1, Number(e.target.value)))}
+            className="input-field text-xs font-mono py-1"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] text-white/40 block">Profund. (m)</label>
+          <input
+            type="number"
+            value={depthM}
+            onChange={(e) => setDepthM(Math.max(1, Number(e.target.value)))}
+            className="input-field text-xs font-mono py-1"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] text-white/40 block">Varanda (m)</label>
+          <input
+            type="number"
+            value={varandaM}
+            onChange={(e) => setVarandaM(Math.max(0, Number(e.target.value)))}
+            className="input-field text-xs font-mono py-1"
+          />
+        </div>
+      </div>
+      <button
+        onClick={handleCreateStage}
+        className="w-full btn-primary text-xs py-1.5 font-medium"
+      >
+        + Gerar Palco no Canvas
+      </button>
+    </div>
   );
 }
 
@@ -186,10 +281,17 @@ export function AssetPanel() {
                   <StageCard key={preset.id} preset={preset} />
                 ))}
               </div>
-              <div className="px-2 pt-1 pb-2">
-                <button className="w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-editor-border rounded-md text-xs text-white/40 hover:text-white/70 hover:border-white/20 transition-colors">
-                  <PenToolIcon size={12} /> Desenhar Polígono Livre
-                </button>
+              <CustomStageForm />
+            </AccordionSection>
+
+            {/* Cenografia e Objetos */}
+            <AccordionSection title="Cenografia & Formas Gerais" icon={<BoxIcon size={13} />} defaultOpen>
+              <div className="space-y-0.5">
+                {getFixturesByCategory('architecture')
+                  .filter((f) => f.type.startsWith('scenery'))
+                  .map((f) => (
+                    <FixtureCard key={f.type} {...f} />
+                  ))}
               </div>
             </AccordionSection>
 

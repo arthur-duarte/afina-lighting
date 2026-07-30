@@ -51,19 +51,19 @@ function CanvasGrid({
 
   return (
     <>
-      {/* Minor grid */}
+      {/* Minor grid lines */}
       {verticals.map((x) => (
-        <Line key={`v${x}`} points={[x, 0, x, height]} stroke="rgba(255,255,255,0.04)" strokeWidth={1} listening={false} />
+        <Line key={`v${x}`} points={[x, 0, x, height]} stroke="rgba(255,255,255,0.12)" strokeWidth={1} listening={false} />
       ))}
       {horizontals.map((y) => (
-        <Line key={`h${y}`} points={[0, y, width, y]} stroke="rgba(255,255,255,0.04)" strokeWidth={1} listening={false} />
+        <Line key={`h${y}`} points={[0, y, width, y]} stroke="rgba(255,255,255,0.12)" strokeWidth={1} listening={false} />
       ))}
-      {/* Major grid */}
+      {/* Major grid lines */}
       {majorVerticals.map((x) => (
-        <Line key={`mv${x}`} points={[x, 0, x, height]} stroke="rgba(255,255,255,0.08)" strokeWidth={1} listening={false} />
+        <Line key={`mv${x}`} points={[x, 0, x, height]} stroke="rgba(239,71,50,0.35)" strokeWidth={1.5} listening={false} />
       ))}
       {majorHorizontals.map((y) => (
-        <Line key={`mh${y}`} points={[0, y, width, y]} stroke="rgba(255,255,255,0.08)" strokeWidth={1} listening={false} />
+        <Line key={`mh${y}`} points={[0, y, width, y]} stroke="rgba(239,71,50,0.35)" strokeWidth={1.5} listening={false} />
       ))}
     </>
   );
@@ -73,6 +73,30 @@ function CanvasGrid({
 function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   el: CanvasElement; isSelected: boolean; onClick: (e: unknown) => void; onDragEnd?: (e: { target: { x: () => number; y: () => number } }) => void;
 }) {
+  const groupRef = useRef<any>(null);
+  const trRef = useRef<any>(null);
+  const store = useEditorStore();
+
+  useEffect(() => {
+    if (isSelected && trRef.current && groupRef.current) {
+      trRef.current.nodes([groupRef.current]);
+      trRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  const handleTransformEnd = () => {
+    if (!groupRef.current) return;
+    const node = groupRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = Math.round(node.rotation());
+    store.updateElement(el.id, {
+      scaleX: Math.max(0.1, Math.min(10, scaleX)),
+      scaleY: Math.max(0.1, Math.min(10, scaleY)),
+      rotation,
+    });
+  };
+
   const def = getFixtureDef(el.type);
   const color = isSelected ? '#60a5fa' : (el.color || def?.colorHex || '#facc15');
   const hasConflict = el.dmx?.hasConflict;
@@ -97,6 +121,45 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
               </>
             )}
             <Text text={el.label} x={4} y={-14} fontSize={9} fill="#94a3b8" fontFamily="JetBrains Mono, monospace" />
+          </Group>
+        );
+      }
+
+      case 'tripod': {
+        const s = 16;
+        return (
+          <Group>
+            <Line points={[0, 0, 0, -s]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
+            <Line points={[0, 0, -s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
+            <Line points={[0, 0, s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
+            <Circle radius={4} fill="#64748b" stroke={strokeColor} strokeWidth={1} />
+            <Text text={el.label || 'Tripé'} x={-20} y={s + 4} fontSize={8} fill="rgba(255,255,255,0.5)" width={40} align="center" fontFamily="JetBrains Mono, monospace" />
+          </Group>
+        );
+      }
+
+      case 'tower': {
+        const w = 24, h = 24;
+        return (
+          <Group>
+            <Rect x={-w / 2} y={-h / 2} width={w} height={h} fill="rgba(71,85,105,0.3)" stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
+            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke={strokeColor} strokeWidth={1} />
+            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke={strokeColor} strokeWidth={1} />
+            <Circle radius={3} fill="#38bdf8" />
+            <Text text={el.label || 'Torre'} x={-20} y={h / 2 + 3} fontSize={8} fill="rgba(255,255,255,0.5)" width={40} align="center" fontFamily="JetBrains Mono, monospace" />
+          </Group>
+        );
+      }
+
+      case 'floor_base': {
+        const s = 14;
+        return (
+          <Group>
+            <Line points={[-s, s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
+            <Line points={[s, s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
+            <Line points={[0, -s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
+            <Circle radius={3.5} fill="#facc15" stroke={strokeColor} strokeWidth={1} />
+            <Text text={el.label || 'Pé de Galinha'} x={-35} y={s + 4} fontSize={8} fill="rgba(255,255,255,0.5)" width={70} align="center" fontFamily="JetBrains Mono, monospace" />
           </Group>
         );
       }
@@ -321,6 +384,80 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         );
       }
 
+      case 'scenery_rect': {
+        const w = (el.customProps?.width as number) ?? 120;
+        const h = (el.customProps?.height as number) ?? 60;
+        return (
+          <Group>
+            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
+              fill="rgba(71,85,105,0.35)" stroke={isSelected ? '#3b82f6' : '#64748b'} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={4} />
+            <Text text={el.label || 'Cenário'} x={-w / 2} y={-6} width={w} align="center"
+              fontSize={10} fill="rgba(255,255,255,0.8)" fontFamily="Inter, sans-serif" />
+          </Group>
+        );
+      }
+
+      case 'scenery_circle': {
+        const r = (el.customProps?.radius as number) ?? 40;
+        return (
+          <Group>
+            <Circle radius={r} fill="rgba(71,85,105,0.35)" stroke={isSelected ? '#3b82f6' : '#64748b'} strokeWidth={isSelected ? 2 : 1.5} />
+            <Text text={el.label || 'Objeto'} x={-r} y={-6} width={r * 2} align="center"
+              fontSize={10} fill="rgba(255,255,255,0.8)" fontFamily="Inter, sans-serif" />
+          </Group>
+        );
+      }
+
+      case 'scenery_platform': {
+        const w = (el.customProps?.width as number) ?? 140;
+        const h = (el.customProps?.height as number) ?? 70;
+        return (
+          <Group>
+            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
+              fill="rgba(120,53,15,0.4)" stroke={isSelected ? '#3b82f6' : '#b45309'} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
+            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke="rgba(180,83,9,0.3)" strokeWidth={1} />
+            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke="rgba(180,83,9,0.3)" strokeWidth={1} />
+            <Text text={el.label || 'Praticável'} x={-w / 2} y={-6} width={w} align="center"
+              fontSize={10} fill="#fde68a" fontFamily="Inter, sans-serif" />
+          </Group>
+        );
+      }
+
+      case 'scenery_curtain': {
+        const w = (el.customProps?.width as number) ?? 200;
+        return (
+          <Group>
+            <Line points={[-w / 2, 0, w / 2, 0]} stroke={isSelected ? '#3b82f6' : '#94a3b8'} strokeWidth={6} lineCap="round" />
+            <Text text={el.label || 'Cortina / Perneta'} x={-w / 2} y={-16} width={w} align="center"
+              fontSize={9} fill="rgba(255,255,255,0.5)" fontFamily="Inter, sans-serif" />
+          </Group>
+        );
+      }
+
+      case 'custom_stage': {
+        const w = (el.customProps?.width as number) ?? 500;
+        const h = (el.customProps?.height as number) ?? 350;
+        const varanda = (el.customProps?.varanda as number) ?? 80;
+        return (
+          <Group>
+            {/* Stage Floor */}
+            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
+              fill="rgba(30, 41, 59, 0.5)" stroke={isSelected ? '#3b82f6' : '#475569'} strokeWidth={isSelected ? 2.5 : 1.5} />
+            {/* Varanda / Proscênio extending forward */}
+            <Rect x={-w / 2} y={h / 2} width={w} height={varanda}
+              fill="rgba(30, 41, 59, 0.3)" stroke={isSelected ? '#3b82f6' : '#334155'} strokeWidth={1} dash={[6, 4]} />
+            {/* Line at Proscenium (Boca de cena) */}
+            <Line points={[-w / 2, h / 2, w / 2, h / 2]} stroke="#38bdf8" strokeWidth={2} />
+            <Text text="PALCO" x={-w / 2} y={-h / 4} width={w} align="center"
+              fontSize={14} fill="rgba(255,255,255,0.2)" fontStyle="bold" fontFamily="Inter, sans-serif" />
+            <Text text="BOCA DE CENA" x={-w / 2} y={h / 2 - 14} width={w} align="center"
+              fontSize={9} fill="#38bdf8" fontFamily="JetBrains Mono, monospace" />
+            <Text text="VARANDA / PROSCÊNIO" x={-w / 2} y={h / 2 + varanda / 2 - 6} width={w} align="center"
+              fontSize={9} fill="rgba(255,255,255,0.3)" fontFamily="JetBrains Mono, monospace" />
+          </Group>
+        );
+      }
+
       case 'hqi':
       case 'linestra':
       case 'pinspot':
@@ -337,41 +474,61 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   };
 
   return (
-    <Group
-      x={el.x}
-      y={el.y}
-      rotation={el.rotation}
-      scaleX={el.scaleX}
-      scaleY={el.scaleY}
-      onClick={onClick}
-      onTap={onClick}
-      draggable={!el.locked}
-      onDragEnd={onDragEnd}
-    >
-      {renderSymbol()}
-      {/* Label below fixture */}
-      {el.label && el.category !== 'architecture' && el.category !== 'rigging' && (
-        <Text
-          text={el.label}
-          x={-20} y={20}
-          fontSize={9}
-          fill={isSelected ? '#93c5fd' : 'rgba(255,255,255,0.55)'}
-          fontFamily="JetBrains Mono, monospace"
-          width={40}
-          align="center"
+    <>
+      <Group
+        ref={groupRef}
+        x={el.x}
+        y={el.y}
+        rotation={el.rotation}
+        scaleX={el.scaleX}
+        scaleY={el.scaleY}
+        onClick={onClick}
+        onTap={onClick}
+        draggable={!el.locked}
+        onDragEnd={onDragEnd}
+        onTransformEnd={handleTransformEnd}
+      >
+        {renderSymbol()}
+        {/* Label below fixture */}
+        {el.label && el.category !== 'architecture' && el.category !== 'rigging' && (
+          <Text
+            text={el.customName || el.label}
+            x={-25} y={20}
+            fontSize={9}
+            fill={isSelected ? '#93c5fd' : 'rgba(255,255,255,0.7)'}
+            fontFamily="JetBrains Mono, monospace"
+            width={50}
+            align="center"
+          />
+        )}
+        {/* DMX address badge */}
+        {el.dmx && el.dmx.address > 0 && (
+          <Text
+            text={`${el.dmx.universe}/${el.dmx.address}`}
+            x={-15} y={-28}
+            fontSize={8}
+            fill={el.dmx.hasConflict ? '#ef4444' : 'rgba(96,165,250,0.7)'}
+            fontFamily="JetBrains Mono, monospace"
+          />
+        )}
+      </Group>
+
+      {isSelected && !el.locked && (
+        <Transformer
+          ref={trRef}
+          rotateEnabled={true}
+          anchorSize={7}
+          borderStroke="#3b82f6"
+          anchorStroke="#3b82f6"
+          anchorFill="#ffffff"
+          anchorCornerRadius={2}
+          boundBoxFunc={(oldBox, newBox) => {
+            if (newBox.width < 8 || newBox.height < 8) return oldBox;
+            return newBox;
+          }}
         />
       )}
-      {/* DMX address badge */}
-      {el.dmx && el.dmx.address > 0 && (
-        <Text
-          text={`${el.dmx.universe}/${el.dmx.address}`}
-          x={-15} y={-28}
-          fontSize={8}
-          fill={el.dmx.hasConflict ? '#ef4444' : 'rgba(96,165,250,0.7)'}
-          fontFamily="JetBrains Mono, monospace"
-        />
-      )}
-    </Group>
+    </>
   );
 }
 
@@ -507,38 +664,79 @@ export default function LightingCanvas() {
     );
   }, [stageScale, stageX, stageY, setStageScale, setStagePosition]);
 
+  // Selection box state for rubberband drag selection
+  const [selectionBox, setSelectionBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const isSelectingRef = useRef(false);
+
   // ── STAGE MOUSE DOWN ────────────────────────────────────
-  const handleStageMouseDown = useCallback((e: { evt: MouseEvent }) => {
+  const handleStageMouseDown = useCallback((e: { target: { getStage: () => unknown; className?: string }; evt: MouseEvent }) => {
     const isMiddle = e.evt.button === 1;
     if (activeTool === 'pan' || isSpaceRef.current || isMiddle) {
       isPanningRef.current = true;
       lastPointerRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+      return;
     }
-  }, [activeTool]);
+
+    const clickedOnEmpty = e.target === (stageRef.current as { getStage: () => unknown })?.getStage?.() || e.target.className === 'Stage';
+    if (activeTool === 'select' && clickedOnEmpty) {
+      const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
+      const pointer = stage?.getPointerPosition();
+      if (pointer) {
+        const x = (pointer.x - stageX) / stageScale;
+        const y = (pointer.y - stageY) / stageScale;
+        isSelectingRef.current = true;
+        setSelectionBox({ x1: x, y1: y, x2: x, y2: y });
+        if (!e.evt.shiftKey) clearSelection();
+      }
+    }
+  }, [activeTool, stageX, stageY, stageScale, clearSelection]);
 
   // ── STAGE MOUSE MOVE ────────────────────────────────────
   const handleStageMouseMove = useCallback((e: { evt: MouseEvent }) => {
-    if (!isPanningRef.current) return;
-    const dx = e.evt.clientX - lastPointerRef.current.x;
-    const dy = e.evt.clientY - lastPointerRef.current.y;
-    lastPointerRef.current = { x: e.evt.clientX, y: e.evt.clientY };
-    setStagePosition(stageX + dx, stageY + dy);
-  }, [stageX, stageY, setStagePosition]);
+    if (isPanningRef.current) {
+      const dx = e.evt.clientX - lastPointerRef.current.x;
+      const dy = e.evt.clientY - lastPointerRef.current.y;
+      lastPointerRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+      setStagePosition(stageX + dx, stageY + dy);
+      return;
+    }
+
+    if (isSelectingRef.current) {
+      const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
+      const pointer = stage?.getPointerPosition();
+      if (pointer) {
+        const x = (pointer.x - stageX) / stageScale;
+        const y = (pointer.y - stageY) / stageScale;
+        setSelectionBox((prev) => (prev ? { ...prev, x2: x, y2: y } : null));
+      }
+    }
+  }, [stageX, stageY, setStagePosition, stageScale]);
 
   // ── STAGE MOUSE UP ──────────────────────────────────────
   const handleStageMouseUp = useCallback(() => {
     isPanningRef.current = false;
-  }, []);
+    if (isSelectingRef.current && selectionBox) {
+      isSelectingRef.current = false;
+      const x1 = Math.min(selectionBox.x1, selectionBox.x2);
+      const x2 = Math.max(selectionBox.x1, selectionBox.x2);
+      const y1 = Math.min(selectionBox.y1, selectionBox.y2);
+      const y2 = Math.max(selectionBox.y1, selectionBox.y2);
 
-  // ── STAGE CLICK (insert fixture) ────────────────────────
-  const handleStageClick = useCallback((e: { target: { getStage: () => unknown }; evt: MouseEvent }) => {
+      if (Math.abs(x2 - x1) > 5 || Math.abs(y2 - y1) > 5) {
+        elements.forEach((el) => {
+          if (el.x >= x1 && el.x <= x2 && el.y >= y1 && el.y <= y2 && !el.locked) {
+            selectElement(el.id, true);
+          }
+        });
+      }
+      setSelectionBox(null);
+    }
+  }, [selectionBox, elements, selectElement]);
+
+  // ── STAGE CLICK (insert fixture or deselect) ──────────────
+  const handleStageClick = useCallback((e: { target: { getStage: () => unknown; className?: string }; evt: MouseEvent }) => {
     const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
     if (!stage) return;
-
-    // Only fire if clicking on stage background
-    if (e.target !== (stageRef.current as { getStage: () => unknown })?.getStage?.()) {
-      if (activeTool !== 'insert_fixture') return;
-    }
 
     if (activeTool === 'insert_fixture' && pendingFixtureType) {
       const pointer = stage.getPointerPosition();
@@ -548,10 +746,10 @@ export default function LightingCanvas() {
       const x = snapToGrid((pointer.x - stageX) / stageScale);
       const y = snapToGrid((pointer.y - stageY) / stageScale);
 
-      const def = pendingFixtureType ? getFixtureDef(pendingFixtureType as FixtureType) : null;
+      const def = getFixtureDef(pendingFixtureType as FixtureType);
       if (!def) return;
 
-      addElement({
+      const id = addElement({
         type: pendingFixtureType as FixtureType,
         category: def.category,
         layerId: def.defaultLayerId,
@@ -559,7 +757,7 @@ export default function LightingCanvas() {
         rotation: 0,
         scaleX: 1,
         scaleY: 1,
-        label: '',
+        label: def.label,
         color: def.colorHex,
         gelatin: 'NC',
         wattage: def.defaultWattage,
@@ -573,18 +771,16 @@ export default function LightingCanvas() {
           footprint: def.defaultDmxFootprint,
           hasConflict: false,
         } : undefined,
-        customProps: def.type === 'lightingbar'
-          ? { width: 300, height: 8 }
-          : def.type.startsWith('truss')
-            ? { width: 200, height: 12 }
-            : {},
+        customProps: pendingFixtureType === 'lightingbar' ? { width: 300, height: 8 } : {},
       });
+      selectElement(id);
       return;
     }
 
     // Deselect on background click
-    if (activeTool === 'select') clearSelection();
-  }, [activeTool, pendingFixtureType, stageX, stageY, stageScale, addElement, clearSelection, snapToGrid]);
+    const clickedOnEmpty = e.target === (stageRef.current as { getStage: () => unknown })?.getStage?.() || e.target.className === 'Stage';
+    if (activeTool === 'select' && clickedOnEmpty) clearSelection();
+  }, [activeTool, pendingFixtureType, stageX, stageY, stageScale, addElement, selectElement, clearSelection, snapToGrid]);
 
   // Magnetic Snap to Rigging Bars Helper
   const snapToRiggingBar = useCallback((x: number, y: number, isRigging = false): { x: number; y: number } => {
@@ -779,10 +975,21 @@ export default function LightingCanvas() {
               el={el}
               isSelected={selectedIds.includes(el.id)}
               onClick={() => selectElement(el.id)}
-              onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
+        {/* ── SELECTION MARQUEE BOX LAYER ─── */}
+        {selectionBox && (
+          <Layer listening={false}>
+            <Rect
+              x={Math.min(selectionBox.x1, selectionBox.x2)}
+              y={Math.min(selectionBox.y1, selectionBox.y2)}
+              width={Math.abs(selectionBox.x2 - selectionBox.x1)}
+              height={Math.abs(selectionBox.y2 - selectionBox.y1)}
+              fill="rgba(59, 130, 246, 0.15)"
+              stroke="#3b82f6"
+              strokeWidth={1}
+              dash={[4, 4]}
             />
-          ))}
-        </Layer>
+          </Layer>
+        )}
       </Stage>
     </div>
   );

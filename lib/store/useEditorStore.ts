@@ -107,8 +107,10 @@ const initialState: EditorState = {
   history: [[]],
   historyIndex: 0,
 
+  colorTheme: 'dark',
   backstageMode: false,
   showFocusCoverage: false,
+  showNewMapModal: false,
   layerPanelOpen: false,
   selectedTab: 'library',
 
@@ -154,8 +156,10 @@ interface EditorStore extends EditorState {
   setActiveLayer: (id: LayerId) => void;
 
   // UI State
+  setColorTheme: (theme: 'dark' | 'light' | 'backstage') => void;
   toggleBackstageMode: () => void;
   toggleFocusCoverage: () => void;
+  setShowNewMapModal: (show: boolean) => void;
   toggleLayerPanel: () => void;
   setSelectedTab: (tab: 'library' | 'layers' | 'patch' | 'legend') => void;
 
@@ -341,18 +345,30 @@ export const useEditorStore = create<EditorStore>()(
       setActiveLayer: (id) => set({ activeLayerId: id }),
 
       // ── UI STATE ─────────────────────────────────────────────
+      setColorTheme: (theme) => {
+        set({ colorTheme: theme, backstageMode: theme === 'backstage' });
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.toggle('light-mode', theme === 'light');
+          document.documentElement.classList.toggle('backstage-mode', theme === 'backstage');
+        }
+      },
+
       toggleBackstageMode: () => {
         set((s) => {
           const next = !s.backstageMode;
+          const theme = next ? 'backstage' : 'dark';
           if (typeof document !== 'undefined') {
             document.documentElement.classList.toggle('backstage-mode', next);
+            document.documentElement.classList.toggle('light-mode', false);
           }
-          return { backstageMode: next };
+          return { backstageMode: next, colorTheme: theme };
         });
       },
 
       toggleFocusCoverage: () =>
         set((s) => ({ showFocusCoverage: !s.showFocusCoverage })),
+
+      setShowNewMapModal: (show) => set({ showNewMapModal: show }),
 
       toggleLayerPanel: () =>
         set((s) => ({ layerPanelOpen: !s.layerPanelOpen })),

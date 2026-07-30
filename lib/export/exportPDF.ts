@@ -223,14 +223,15 @@ export async function exportTechnicalPDF(
   // Table header
   const cols = [
     { label: 'CH', w: 10 },
-    { label: 'APARELHO', w: 35 },
-    { label: 'TIPO', w: 28 },
-    { label: 'GEL', w: 16 },
+    { label: 'IDENTIFICADOR / NOME', w: 42 },
+    { label: 'TIPO', w: 26 },
+    { label: 'GEL', w: 14 },
     { label: 'UNI', w: 10 },
     { label: 'ADDR', w: 12 },
-    { label: 'FASE', w: 12 },
-    { label: 'W', w: 14 },
-    { label: 'OBS', w: -1 }, // fill remaining
+    { label: 'VOLT', w: 12 },
+    { label: 'FASE', w: 10 },
+    { label: 'W', w: 12 },
+    { label: 'OBSERVAÇÕES', w: -1 }, // fill remaining
   ];
 
   // Header background
@@ -251,6 +252,7 @@ export async function exportTechnicalPDF(
 
   // Rows
   patchRows.slice(0, 45).forEach((row, i) => {
+    const el = elements.find((e) => e.label === row.label && e.type === row.type);
     const bg = i % 2 === 0 ? COLORS.bg : COLORS.surface;
     doc.setFillColor(...bg);
     doc.rect(tableX, tableY - 3, tableW, 6, 'F');
@@ -258,14 +260,15 @@ export async function exportTechnicalPDF(
     cx = tableX + 2;
     const values = [
       row.channel || '—',
-      row.label || '—',
+      el?.customName || row.label || row.type,
       row.type,
       row.gelatin,
       String(row.universe),
       String(row.address),
+      el?.voltage || '220V',
       row.phase,
       String(row.wattage),
-      row.notes || '',
+      el?.notes || row.notes || '',
     ];
 
     values.forEach((val, vi) => {

@@ -30,8 +30,10 @@ declare global {
 export function TopBar() {
   const {
     undo, redo, historyIndex, history,
+    colorTheme, setColorTheme,
     backstageMode, toggleBackstageMode,
     showFocusCoverage, toggleFocusCoverage,
+    setShowNewMapModal,
     technicalSeal,
     getTotalWattage, getAmperageAt,
     clearCanvas,
@@ -172,8 +174,8 @@ export function TopBar() {
         </button>
         {fileMenuOpen && (
           <div className="absolute top-full left-0 mt-1 w-52 bg-editor-raised border border-editor-border rounded-lg shadow-panel z-50 py-1 animate-fade-in">
-            <button className="menu-item w-full text-xs" onClick={() => { clearCanvas(); closeAll(); }}>
-              <FileIcon size={13} /> Novo Projeto
+            <button className="menu-item w-full text-xs" onClick={() => { setShowNewMapModal(true); closeAll(); }}>
+              <FileIcon size={13} /> Novo Projeto / Novo Mapa
             </button>
             <button className="menu-item w-full text-xs" onClick={handleSaveLocal}>
               <SaveIcon size={13} />
@@ -278,14 +280,30 @@ export function TopBar() {
         <EyeIcon size={15} />
       </button>
 
-      {/* Backstage Mode */}
-      <button
-        onClick={toggleBackstageMode}
-        title="Modo Backstage / Noturno (F11 ou B)"
-        className={backstageMode ? 'icon-btn-active' : 'icon-btn'}
-      >
-        {backstageMode ? <SunIcon size={15} /> : <MoonIcon size={15} />}
-      </button>
+      {/* Theme Toggles */}
+      <div className="flex items-center gap-0.5 bg-editor-raised rounded-lg p-0.5 border border-editor-border">
+        <button
+          onClick={() => setColorTheme('dark')}
+          title="Modo Escuro (Padrão Editor)"
+          className={`icon-btn w-6 h-6 p-1 ${colorTheme === 'dark' ? 'icon-btn-active' : ''}`}
+        >
+          <MoonIcon size={13} />
+        </button>
+        <button
+          onClick={() => setColorTheme('light')}
+          title="Modo Claro (Diurno / Impressão)"
+          className={`icon-btn w-6 h-6 p-1 ${colorTheme === 'light' ? 'icon-btn-active' : ''}`}
+        >
+          <SunIcon size={13} />
+        </button>
+        <button
+          onClick={() => setColorTheme(colorTheme === 'backstage' ? 'dark' : 'backstage')}
+          title="Modo Backstage / Vermelho Noturno (F11 / B)"
+          className={`icon-btn w-6 h-6 p-1 ${colorTheme === 'backstage' ? 'bg-red-950 text-red-400 border border-red-800' : ''}`}
+        >
+          <ZapIcon size={13} className={colorTheme === 'backstage' ? 'text-red-400' : 'text-white/40'} />
+        </button>
+      </div>
 
       <div className="w-px h-5 bg-editor-border mx-1" />
 

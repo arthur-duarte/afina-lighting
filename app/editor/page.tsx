@@ -5,6 +5,7 @@ import { TopBar } from '@/components/editor/TopBar';
 import { AssetPanel } from '@/components/editor/AssetPanel';
 import { PropertyInspector } from '@/components/editor/PropertyInspector';
 import { TechnicalSeal } from '@/components/editor/TechnicalSeal';
+import { NewMapModal } from '@/components/editor/NewMapModal';
 import { useKeyboardShortcuts } from '@/lib/keyboard/useKeyboardShortcuts';
 
 // Dynamic import of canvas (Konva requires browser)
@@ -30,6 +31,7 @@ export default function EditorPage() {
       <LightingCanvas />
       <PropertyInspector />
       <TechnicalSeal />
+      <NewMapModal />
     </div>
   );
 }

@@ -87,8 +87,8 @@ function SingleInspector({ el }: { el: CanvasElement }) {
           </div>
         )}
 
-        {/* ── POSIÇÃO ─── */}
-        <div className="panel-label mb-2 mt-1">Posição</div>
+        {/* ── POSIÇÃO E ESCALA ─── */}
+        <div className="panel-label mb-2 mt-1">Posição e Tamanho</div>
         <div className="grid grid-cols-2 gap-1.5 mb-3">
           <div>
             <label className="text-[10px] text-white/40 mb-0.5 block">X (px)</label>
@@ -105,6 +105,26 @@ function SingleInspector({ el }: { el: CanvasElement }) {
               type="number"
               value={Math.round(el.y)}
               onChange={(e) => update('y', Number(e.target.value))}
+              className="input-field font-mono text-xs"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-white/40 mb-0.5 block">Escala X</label>
+            <input
+              type="number"
+              step={0.1}
+              value={Number((el.scaleX ?? 1).toFixed(2))}
+              onChange={(e) => update('scaleX', Number(e.target.value))}
+              className="input-field font-mono text-xs"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-white/40 mb-0.5 block">Escala Y</label>
+            <input
+              type="number"
+              step={0.1}
+              value={Number((el.scaleY ?? 1).toFixed(2))}
+              onChange={(e) => update('scaleY', Number(e.target.value))}
               className="input-field font-mono text-xs"
             />
           </div>
@@ -132,6 +152,14 @@ function SingleInspector({ el }: { el: CanvasElement }) {
 
         {/* ── CÊNICO ─── */}
         <div className="panel-label mb-2">Cênico</div>
+        <FieldRow label="Identificador">
+          <input
+            value={el.customName ?? ''}
+            onChange={(e) => update('customName', e.target.value)}
+            className="input-field text-xs"
+            placeholder="ex: Foco Principal Ator A"
+          />
+        </FieldRow>
         <FieldRow label="Canal">
           <input
             type="number"
@@ -143,30 +171,44 @@ function SingleInspector({ el }: { el: CanvasElement }) {
           />
         </FieldRow>
         <FieldRow label="Gelatina">
-          <select
-            value={el.gelatin}
-            onChange={(e) => update('gelatin', e.target.value)}
-            className="select-field text-xs"
-          >
-            {GELATIN_PRESETS.map((g) => (
-              <option key={g.code} value={g.code}>
-                {g.code} — {g.name}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-1">
+            <select
+              value={GELATIN_PRESETS.some((g) => g.code === el.gelatin) ? el.gelatin : 'OUTROS'}
+              onChange={(e) => {
+                if (e.target.value !== 'OUTROS') update('gelatin', e.target.value);
+                else update('gelatin', 'Outros / Filtro Customizado');
+              }}
+              className="select-field text-xs"
+            >
+              {GELATIN_PRESETS.map((g) => (
+                <option key={g.code} value={g.code}>
+                  {g.code} — {g.name}
+                </option>
+              ))}
+              <option value="OUTROS">Outros / Personalizado</option>
+            </select>
+            {!GELATIN_PRESETS.some((g) => g.code === el.gelatin) && (
+              <input
+                value={el.gelatin}
+                onChange={(e) => update('gelatin', e.target.value)}
+                className="input-field text-xs"
+                placeholder="Especifique o filtro / cor..."
+              />
+            )}
+          </div>
         </FieldRow>
-        <FieldRow label="Observ.">
-          <input
+        <FieldRow label="Observações">
+          <textarea
             value={el.notes ?? ''}
             onChange={(e) => update('notes', e.target.value)}
-            className="input-field text-xs"
-            placeholder="Notas..."
+            className="input-field text-xs h-16 py-1 resize-none"
+            placeholder="Observações de afinação / itens não abarcados..."
           />
         </FieldRow>
 
         {/* ── ELÉTRICO ─── */}
         <div className="panel-label mb-2 mt-3">Elétrico</div>
-        <FieldRow label="Wattagem">
+        <FieldRow label="Wattage (W)">
           <div className="flex items-center gap-1">
             <input
               type="number"
@@ -177,6 +219,32 @@ function SingleInspector({ el }: { el: CanvasElement }) {
               min={0}
             />
             <ZapIcon size={12} className="text-yellow-400 flex-shrink-0" />
+          </div>
+        </FieldRow>
+        <FieldRow label="Voltagem">
+          <div className="space-y-1">
+            <select
+              value={['220V', '110V', 'Bivolt', '380V Trifásico'].includes(el.voltage ?? '220V') ? (el.voltage ?? '220V') : 'OUTROS'}
+              onChange={(e) => {
+                if (e.target.value !== 'OUTROS') update('voltage', e.target.value);
+                else update('voltage', 'Outros / Especifique');
+              }}
+              className="select-field text-xs"
+            >
+              <option value="220V">220V</option>
+              <option value="110V">110V</option>
+              <option value="Bivolt">Bivolt</option>
+              <option value="380V Trifásico">380V Trifásico</option>
+              <option value="OUTROS">Outros / Personalizado</option>
+            </select>
+            {!['220V', '110V', 'Bivolt', '380V Trifásico'].includes(el.voltage ?? '220V') && (
+              <input
+                value={el.voltage ?? ''}
+                onChange={(e) => update('voltage', e.target.value)}
+                className="input-field text-xs"
+                placeholder="Especifique a voltagem..."
+              />
+            )}
           </div>
         </FieldRow>
         <FieldRow label="Fase">

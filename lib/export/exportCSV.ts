@@ -11,40 +11,41 @@ export function exportPatchCSV(elements: CanvasElement[], seal: TechnicalSeal) {
 
   const header = [
     'Canal',
-    'Aparelho',
-    'Tipo',
-    'Posição/Vara',
+    'Identificador',
+    'Aparelho/Tipo',
     'Gelatina/Filtro',
     'Universo DMX',
     'Endereço DMX',
     'Footprint',
+    'Voltagem',
     'Fase Elétrica',
     'Wattagem (W)',
     'Observações',
   ];
 
   const lines: string[] = [
-    `# Afina v2.0 — Tabela de Patch`,
+    `# Afina v2.0 — Tabela de Patch e Afinação`,
     `# Espetáculo: ${seal.show}`,
     `# Iluminador: ${seal.designer}`,
     `# Data: ${seal.date}`,
     ``,
     header.join(';'),
-    ...rows.map((r) =>
-      [
+    ...rows.map((r) => {
+      const el = elements.find((e) => e.label === r.label && e.type === r.type);
+      return [
         r.channel || '',
-        r.label || '',
+        el?.customName || r.label || '',
         r.type,
-        r.position,
         r.gelatin,
         r.universe,
         r.address,
-        elements.find((el) => el.label === r.label)?.dmx?.footprint ?? 1,
+        el?.dmx?.footprint ?? 1,
+        el?.voltage || '220V',
         r.phase,
         r.wattage,
-        r.notes || '',
-      ].join(';')
-    ),
+        el?.notes || r.notes || '',
+      ].join(';');
+    }),
   ];
 
   const csv = lines.join('\n');

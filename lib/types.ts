@@ -36,8 +36,16 @@ export type FixtureType =
   | 'truss_q25'
   | 'truss_q30'
   | 'truss_q50'
+  | 'tripod'
+  | 'tower'
+  | 'floor_base'
   | 'wall'
   | 'stage_polygon'
+  | 'custom_stage'
+  | 'scenery_rect'
+  | 'scenery_circle'
+  | 'scenery_platform'
+  | 'scenery_curtain'
   | 'column'
   | 'text'
   | 'dimension'
@@ -87,8 +95,10 @@ export interface FixtureElement {
 
   // Físico
   angle?: number;         // ângulo de abertura (elipsoidal, etc.)
-  channel?: number;       // canal na mesa de luz
-  notes?: string;
+  // Parâmetros estendidos
+  customName?: string;    // nome personalizado ex: "Foco Principal Ator A"
+  voltage?: string;       // voltagem ex: "220V", "110V", "Bivolt"
+  notes?: string;         // observações técnicas de afinação
 
   // Visibilidade / lock
   locked: boolean;
@@ -190,8 +200,10 @@ export interface EditorState {
   historyIndex: number;
 
   // UI state
+  colorTheme: 'dark' | 'light' | 'backstage';
   backstageMode: boolean;
   showFocusCoverage: boolean;
+  showNewMapModal: boolean;
   layerPanelOpen: boolean;
   selectedTab: 'library' | 'layers' | 'patch' | 'legend';
 
