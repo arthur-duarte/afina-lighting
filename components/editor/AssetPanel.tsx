@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { useEditorStore } from '@/lib/store/useEditorStore';
-import { FIXTURE_LIBRARY, CATEGORY_LABELS, getFixturesByCategory } from '@/lib/fixtures/fixtureLibrary';
+import { CATEGORY_LABELS, getFixturesByCategory } from '@/lib/fixtures/fixtureLibrary';
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { PatchPanel } from './PatchPanel';
 import { DynamicLegend } from './DynamicLegend';
 import type { FixtureType } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid';
 import {
   ChevronDownIcon, ChevronRightIcon,
   Grid3x3Icon, PenToolIcon, TypeIcon,
