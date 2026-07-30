@@ -119,6 +119,10 @@ function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
         y: centerY + offsetY - 150,
       });
     });
+
+    setTimeout(() => {
+      store.fitStageToScreen();
+    }, 50);
   };
 
   return (
@@ -170,6 +174,9 @@ function CustomStageForm() {
       customProps: { width: widthPx, height: depthPx, varanda: varandaPx },
     });
     selectElement(id);
+    setTimeout(() => {
+      useEditorStore.getState().fitStageToScreen();
+    }, 50);
   };
 
   return (

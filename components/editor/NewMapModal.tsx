@@ -87,7 +87,12 @@ export function NewMapModal() {
       selectElement(id);
     }
 
-    // 4. Close modal
+    // 4. Fit stage to screen dimensions with side margins
+    setTimeout(() => {
+      useEditorStore.getState().fitStageToScreen();
+    }, 50);
+
+    // 5. Close modal
     setShowNewMapModal(false);
   };
 

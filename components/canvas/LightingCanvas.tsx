@@ -494,6 +494,15 @@ export default function LightingCanvas() {
     return () => ro.disconnect();
   }, []);
 
+  // Auto-fit stage to screen when container dimensions or initial elements are set
+  const hasFittedRef = useRef(false);
+  useEffect(() => {
+    if (dimensions.width > 0 && dimensions.height > 0 && elements.length > 0 && !hasFittedRef.current) {
+      hasFittedRef.current = true;
+      store.fitStageToScreen(dimensions.width, dimensions.height);
+    }
+  }, [dimensions, elements, store]);
+
   // Global ref export
   useEffect(() => {
     if (stageRef.current) {

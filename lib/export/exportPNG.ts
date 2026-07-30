@@ -1,10 +1,10 @@
 // ============================================================
 // AFINA v2.0 — High-Resolution Technical PNG Export
-// Pure White Background, Header (Show Name & Date), Plot, Legend & Seal
+// Structured into 3-4 Clean Technical Drawing Rectangles on a Pure White Sheet
 // ============================================================
 
 import type { CanvasElement, TechnicalSeal, FixtureType } from '@/lib/types';
-import { getFixtureDef, GELATIN_PRESETS } from '@/lib/fixtures/fixtureLibrary';
+import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
 
 interface KonvaStage {
   toDataURL: (config: {
@@ -15,8 +15,8 @@ interface KonvaStage {
 }
 
 /**
- * Exports the complete technical lighting plot as a high-DPI PNG sheet (300 DPI equivalent)
- * with pure white background, Show Name, Date, Equipment Legend, and Technical Seal.
+ * Exports the technical lighting plot as a structured 3-box technical drawing sheet (300 DPI)
+ * on a pure white background with Show Name, Date, Equipment Legend, and Technical Seal.
  */
 export function exportStageToPNG(
   stage: KonvaStage,
@@ -34,7 +34,7 @@ export function exportStageToPNG(
   const img = new Image();
   img.src = stageDataUrl;
   img.onload = () => {
-    // 2. Offscreen composite canvas (A3 proportion high-res 2400 x 1600 px)
+    // 2. Offscreen composite canvas (A3 proportion 2400 x 1600 px)
     const exportCanvas = document.createElement('canvas');
     const width = 2400;
     const height = 1600;
@@ -44,91 +44,108 @@ export function exportStageToPNG(
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) return;
 
-    // ── PURE WHITE BACKGROUND ──
+    const margin = 32;
+
+    // ── SHEET PURE WHITE BACKGROUND ──
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // ── TOP HEADER BAND ──
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(0, 0, width, 120);
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, 120);
-    ctx.lineTo(width, 120);
-    ctx.stroke();
+    // ── RETÂNGULO 1: CABEÇALHO DO PROJETO E APP USADO (TOPO) ──
+    const headerX = margin;
+    const headerY = margin;
+    const headerW = width - margin * 2;
+    const headerH = 110;
 
-    // Brand logo
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(headerX, headerY, headerW, headerH);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(headerX, headerY, headerW, headerH);
+
+    // Brand logo + App info
     ctx.fillStyle = '#ef4732';
-    ctx.fillRect(40, 30, 48, 48);
+    ctx.fillRect(headerX + 20, headerY + 20, 44, 44);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillText('A', 54, 64);
+    ctx.font = 'bold 26px Inter, sans-serif';
+    ctx.fillText('A', headerX + 33, headerY + 52);
 
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 24px Inter, sans-serif';
-    ctx.fillText('AFINA LIGHTING PLOT', 104, 52);
+    ctx.font = 'bold 22px Inter, sans-serif';
+    ctx.fillText('AFINA v2.0', headerX + 78, headerY + 44);
     ctx.fillStyle = '#64748b';
-    ctx.font = '14px Inter, sans-serif';
-    ctx.fillText('PROJETO E PLANTA DE ILUMINAÇÃO CÊNICA', 104, 76);
+    ctx.font = '13px Inter, sans-serif';
+    ctx.fillText('SOFTWARE DE ILUMINAÇÃO CÊNICA & MAPA DE LUZ 2D', headerX + 78, headerY + 68);
 
-    // ── SHOW NAME & DATE (TOP RIGHT) ──
+    // Show Title & Date info (Top Right of Header Box)
     const showName = (seal.show || 'NOVO ESPETÁCULO').toUpperCase();
     const dateStr = seal.date || new Date().toLocaleDateString('pt-BR');
+    const designerName = seal.designer || 'Iluminador não informado';
+    const venueName = seal.venue || 'Teatro Principal';
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 26px Inter, sans-serif';
-    ctx.fillText(showName, width - 40, 52);
+    ctx.font = 'bold 24px Inter, sans-serif';
+    ctx.fillText(showName, headerX + headerW - 24, headerY + 44);
 
     ctx.fillStyle = '#0284c7';
-    ctx.font = 'bold 16px "JetBrains Mono", monospace';
-    ctx.fillText(`DATA: ${dateStr}   ·   VERSÃO: ${seal.version || 'v1.0'}`, width - 40, 80);
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.fillText(`DATA: ${dateStr}   ·   ILUMINADOR: ${designerName.toUpperCase()}   ·   LOCAL: ${venueName.toUpperCase()}`, headerX + headerW - 24, headerY + 72);
     ctx.textAlign = 'left';
 
-    // ── DRAWING CANVAS PLOT (CENTER) ──
-    const plotMarginLeft = 40;
-    const plotMarginTop = 140;
-    const legendWidth = 420;
-    const sealHeight = 120;
+    // ── RETÂNGULO 2: DESENHO DO MAPA DE LUZ (CENTRO ESQUERDA) ──
+    const plotX = margin;
+    const plotY = headerY + headerH + 20;
+    const legendW = 460;
+    const sealH = 110;
 
-    const plotWidth = width - plotMarginLeft - legendWidth - 60;
-    const plotHeight = height - plotMarginTop - sealHeight - 40;
+    const plotW = width - margin * 2 - legendW - 20;
+    const plotH = height - plotY - sealH - margin - 20;
 
-    // Outer border around plot
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(plotMarginLeft, plotMarginTop, plotWidth, plotHeight);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(plotX, plotY, plotW, plotH);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(plotX, plotY, plotW, plotH);
 
-    // Draw stage plot image inside box with aspect-fit
+    // Title label inside plot box
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px "JetBrains Mono", monospace';
+    ctx.fillText('PLANTA DE ILUMINAÇÃO (VISÃO GERAL DO PALCO)', plotX + 16, plotY + 24);
+
+    // Draw stage plot image centered with padding
+    const innerPad = 24;
+    const boxW = plotW - innerPad * 2;
+    const boxH = plotH - innerPad * 2 - 20;
+
     const imgAspect = img.width / img.height;
-    const boxAspect = plotWidth / plotHeight;
-    let drawW = plotWidth;
-    let drawH = plotHeight;
-    let drawX = plotMarginLeft;
-    let drawY = plotMarginTop;
+    const boxAspect = boxW / boxH;
+    let drawW = boxW;
+    let drawH = boxH;
+    let drawX = plotX + innerPad;
+    let drawY = plotY + innerPad + 16;
 
     if (imgAspect > boxAspect) {
-      drawH = plotWidth / imgAspect;
-      drawY = plotMarginTop + (plotHeight - drawH) / 2;
+      drawH = boxW / imgAspect;
+      drawY = plotY + innerPad + 16 + (boxH - drawH) / 2;
     } else {
-      drawW = plotHeight * imgAspect;
-      drawX = plotMarginLeft + (plotWidth - drawW) / 2;
+      drawW = boxH * imgAspect;
+      drawX = plotX + innerPad + (boxW - drawW) / 2;
     }
 
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-    // ── EQUIPMENT LEGEND (OUTSIDE MAP - RIGHT COLUMN) ──
-    const legendX = plotMarginLeft + plotWidth + 24;
-    const legendY = plotMarginTop;
+    // ── RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS & SIMBOLOGIA (DIREITA) ──
+    const legendX = plotX + plotW + 20;
+    const legendY = plotY;
+    const legendH = plotH;
 
     ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(legendX, legendY, legendWidth, plotHeight);
+    ctx.fillRect(legendX, legendY, legendW, legendH);
     ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(legendX, legendY, legendWidth, plotHeight);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(legendX, legendY, legendW, legendH);
 
-    // Legend Header
+    // Header inside Legend box
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 16px Inter, sans-serif';
     ctx.fillText('LEGENDA DE EQUIPAMENTOS', legendX + 20, legendY + 36);
@@ -137,7 +154,7 @@ export function exportStageToPNG(
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(legendX + 20, legendY + 48);
-    ctx.lineTo(legendX + legendWidth - 20, legendY + 48);
+    ctx.lineTo(legendX + legendW - 20, legendY + 48);
     ctx.stroke();
 
     // Count fixtures
@@ -156,72 +173,75 @@ export function exportStageToPNG(
         }
       });
 
-    let itemY = legendY + 80;
+    let itemY = legendY + 84;
     fixtureMap.forEach((item) => {
       // Swatch color box
       ctx.fillStyle = item.color;
-      ctx.fillRect(legendX + 20, itemY - 14, 20, 20);
+      ctx.fillRect(legendX + 20, itemY - 14, 22, 22);
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(legendX + 20, itemY - 14, 20, 20);
+      ctx.strokeRect(legendX + 20, itemY - 14, 22, 22);
 
       // Label text
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 14px Inter, sans-serif';
-      ctx.fillText(item.label, legendX + 50, itemY);
+      ctx.fillText(item.label, legendX + 52, itemY + 2);
 
       // Count
       ctx.textAlign = 'right';
       ctx.fillStyle = '#ef4732';
       ctx.font = 'bold 16px "JetBrains Mono", monospace';
-      ctx.fillText(`×${item.count}`, legendX + legendWidth - 20, itemY);
+      ctx.fillText(`×${item.count}`, legendX + legendW - 20, itemY + 2);
       ctx.textAlign = 'left';
 
-      itemY += 36;
+      itemY += 38;
     });
 
-    // ── TECHNICAL SEAL (BOTTOM BAR) ──
-    const sealY = height - sealHeight - 20;
+    // ── RETÂNGULO 4: SELO TÉCNICO DE RODAPÉ (CARIMBO PRANCHA) ──
+    const sealY = height - sealH - margin;
+    const sealX = margin;
+    const sealW = width - margin * 2;
+
     ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(40, sealY, width - 80, sealHeight);
+    ctx.fillRect(sealX, sealY, sealW, sealH);
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 3;
-    ctx.strokeRect(40, sealY, width - 80, sealHeight);
+    ctx.strokeRect(sealX, sealY, sealW, sealH);
 
     const sealFields = [
-      { label: 'ESPETÁCULO', val: seal.show || '—' },
-      { label: 'ILUMINADOR', val: seal.designer || '—' },
-      { label: 'OPERADOR', val: seal.operator || '—' },
+      { label: 'ESPETÁCULO / PROJETO', val: seal.show || '—' },
+      { label: 'ILUMINADOR / DESIGNER', val: seal.designer || '—' },
+      { label: 'OPERADOR DE LUZ', val: seal.operator || '—' },
       { label: 'TEATRO / LOCAL', val: seal.venue || '—' },
-      { label: 'DATA', val: seal.date || dateStr },
-      { label: 'VERSÃO', val: seal.version || 'v1.0' },
-      { label: 'ESCALA', val: seal.scale || '1:50' },
-      { label: 'COMPANHIA', val: seal.clientCompany || '—' },
+      { label: 'DATA DA MONTAGEM', val: seal.date || dateStr },
+      { label: 'VERSÃO DO PROJETO', val: seal.version || 'v1.0' },
+      { label: 'ESCALA DE IMPRESSÃO', val: seal.scale || '1:50' },
+      { label: 'COMPANHIA / APLICAÇÃO', val: `${seal.clientCompany || 'Afina v2.0'}` },
     ];
 
-    const colWidth = (width - 80) / sealFields.length;
+    const colWidth = sealW / sealFields.length;
     sealFields.forEach((f, idx) => {
-      const colX = 40 + idx * colWidth;
+      const colX = sealX + idx * colWidth;
 
       if (idx > 0) {
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(colX, sealY);
-        ctx.lineTo(colX, sealY + sealHeight);
+        ctx.lineTo(colX, sealY + sealH);
         ctx.stroke();
       }
 
       ctx.fillStyle = '#64748b';
-      ctx.font = 'bold 11px Inter, sans-serif';
-      ctx.fillText(f.label, colX + 12, sealY + 32);
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.fillText(f.label, colX + 12, sealY + 28);
 
       ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 15px Inter, sans-serif';
-      ctx.fillText(f.val, colX + 12, sealY + 70);
+      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.fillText(f.val, colX + 12, sealY + 68);
     });
 
-    // Download PNG file
+    // Trigger PNG download
     const link = document.createElement('a');
     link.href = exportCanvas.toDataURL('image/png');
     const safeShow = (seal.show || 'espetaculo').replace(/[^a-zA-Z0-9_-]/g, '_');

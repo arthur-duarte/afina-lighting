@@ -128,6 +128,7 @@ interface EditorStore extends EditorState {
   setStagePosition: (x: number, y: number) => void;
   setStageScale: (scale: number) => void;
   resetView: () => void;
+  fitStageToScreen: (canvasW?: number, canvasH?: number) => void;
 
   // Grid & Tools
   toggleGrid: () => void;
@@ -206,7 +207,53 @@ export const useEditorStore = create<EditorStore>()(
       // ── VIEWPORT ────────────────────────────────────────────
       setStagePosition: (x, y) => set({ stageX: x, stageY: y }),
       setStageScale: (scale) => set({ stageScale: Math.max(0.05, Math.min(8, scale)) }),
-      resetView: () => set({ stageX: 0, stageY: 0, stageScale: 1 }),
+      resetView: () => {
+        const { fitStageToScreen } = get();
+        fitStageToScreen();
+      },
+
+      fitStageToScreen: (canvasW = 800, canvasH = 600) => {
+        const { elements } = get();
+        if (elements.length === 0) {
+          set({ stageX: 0, stageY: 0, stageScale: 1 });
+          return;
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        elements.forEach((el) => {
+          const w = (el.customProps?.width as number) || (el.scaleX ? 40 * el.scaleX : 40);
+          const h = (el.customProps?.height as number) || (el.scaleY ? 40 * el.scaleY : 40);
+
+          const left = el.x - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? w / 2 : 0);
+          const top = el.y - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? h / 2 : 0);
+          const right = left + w;
+          const bottom = top + h;
+
+          if (left < minX) minX = left;
+          if (top < minY) minY = top;
+          if (right > maxX) maxX = right;
+          if (bottom > maxY) maxY = bottom;
+        });
+
+        const contentW = Math.max(100, maxX - minX);
+        const contentH = Math.max(100, maxY - minY);
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Available space with 90px padding margin ("respiro lateral amplo")
+        const pad = 90;
+        const availW = Math.max(200, canvasW - pad * 2);
+        const availH = Math.max(200, canvasH - pad * 2);
+
+        const scale = Math.max(0.4, Math.min(2.0, Math.min(availW / contentW, availH / contentH)));
+
+        const stageX = canvasW / 2 - centerX * scale;
+        const stageY = canvasH / 2 - centerY * scale;
+
+        set({ stageScale: scale, stageX, stageY });
+      },
 
       // ── GRID & TOOLS ─────────────────────────────────────────
       toggleGrid: () => set((s) => ({ gridVisible: !s.gridVisible })),
