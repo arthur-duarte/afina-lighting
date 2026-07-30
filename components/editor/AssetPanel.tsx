@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useEditorStore } from '@/lib/store/useEditorStore';
-import { CATEGORY_LABELS, getFixturesByCategory } from '@/lib/fixtures/fixtureLibrary';
+import { CATEGORY_LABELS, getFixturesByCategory, getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { PatchPanel } from './PatchPanel';
 import { DynamicLegend } from './DynamicLegend';
