@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { SymbolIcon } from './SymbolIcon';
