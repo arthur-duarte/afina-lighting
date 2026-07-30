@@ -107,7 +107,7 @@ const initialState: EditorState = {
   history: [[]],
   historyIndex: 0,
 
-  colorTheme: 'dark',
+  colorTheme: 'light',
   backstageMode: false,
   showFocusCoverage: false,
   showNewMapModal: false,
@@ -348,18 +348,23 @@ export const useEditorStore = create<EditorStore>()(
       setColorTheme: (theme) => {
         set({ colorTheme: theme, backstageMode: theme === 'backstage' });
         if (typeof document !== 'undefined') {
-          document.documentElement.classList.toggle('light-mode', theme === 'light');
-          document.documentElement.classList.toggle('backstage-mode', theme === 'backstage');
+          const html = document.documentElement;
+          html.classList.remove('light-mode', 'dark-mode', 'backstage-mode');
+          if (theme === 'dark')      html.classList.add('dark-mode');
+          if (theme === 'light')     html.classList.add('light-mode');
+          if (theme === 'backstage') html.classList.add('backstage-mode');
         }
       },
 
       toggleBackstageMode: () => {
         set((s) => {
           const next = !s.backstageMode;
-          const theme = next ? 'backstage' : 'dark';
+          const theme = next ? 'backstage' : 'light';
           if (typeof document !== 'undefined') {
-            document.documentElement.classList.toggle('backstage-mode', next);
-            document.documentElement.classList.toggle('light-mode', false);
+            const html = document.documentElement;
+            html.classList.remove('light-mode', 'dark-mode', 'backstage-mode');
+            if (next) html.classList.add('backstage-mode');
+            else html.classList.add('light-mode');
           }
           return { backstageMode: next, colorTheme: theme };
         });

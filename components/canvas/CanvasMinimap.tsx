@@ -1,7 +1,6 @@
 'use client';
 
 import { useEditorStore } from '@/lib/store/useEditorStore';
-import { CompassIcon, Maximize2Icon } from 'lucide-react';
 
 export function CanvasMinimap() {
   const store = useEditorStore();
@@ -9,12 +8,10 @@ export function CanvasMinimap() {
 
   const mapWidth = 160;
   const mapHeight = 110;
-  const virtualCanvasSize = 3000; // 3000px virtual canvas space
+  const virtualCanvasSize = 3000;
 
-  // Mini scale
-  const scale = mapWidth / virtualCanvasSize; // ~0.053
+  const scale = mapWidth / virtualCanvasSize;
 
-  // Current viewport rect box calculations
   const viewW = Math.min(mapWidth, (800 / (stageScale || 1)) * scale);
   const viewH = Math.min(mapHeight, (600 / (stageScale || 1)) * scale);
 
@@ -25,77 +22,101 @@ export function CanvasMinimap() {
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-
-    // Convert click position to virtual canvas coordinates
     const targetVirtualX = (clickX / mapWidth) * virtualCanvasSize - 1500;
     const targetVirtualY = (clickY / mapHeight) * virtualCanvasSize - 1500;
-
-    // Pan stage to target position
-    const newStageX = -targetVirtualX * (stageScale || 1);
-    const newStageY = -targetVirtualY * (stageScale || 1);
-
-    setStagePosition(newStageX, newStageY);
+    setStagePosition(-targetVirtualX * (stageScale || 1), -targetVirtualY * (stageScale || 1));
   };
 
   return (
-    <div className="absolute bottom-4 left-4 z-20 bg-[#121218]/90 backdrop-blur-md border border-[#2a2a38] rounded-xl p-2 shadow-2xl flex flex-col gap-1.5 select-none">
+    <div
+      className="absolute bottom-4 left-4 z-20 rounded-xl shadow-lg flex flex-col gap-1.5 select-none overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.95)',
+        border: '1px solid #dde1ec',
+        backdropFilter: 'blur(8px)',
+        padding: '8px',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-afina-400">
-          <CompassIcon size={12} /> Radar / Minimap
+      <div className="flex items-center justify-between px-0.5">
+        <div
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+          style={{ color: '#ef4732' }}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.5"/>
+            <line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" strokeWidth="1"/>
+            <line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1"/>
+          </svg>
+          Radar
         </div>
         <button
           onClick={resetView}
-          className="text-[9px] text-white/40 hover:text-white flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
-          title="Centralizar Visão (Reset Zoom/Pan)"
+          className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+          style={{ color: '#64748b', background: '#f0f2f7', border: '1px solid #dde1ec' }}
+          title="Centralizar visão"
         >
-          <Maximize2Icon size={10} /> Reset
+          Reset
         </button>
       </div>
 
-      {/* Mini Radar Screen */}
+      {/* Mini radar screen */}
       <div
         onClick={handleMinimapClick}
-        className="relative w-[160px] h-[110px] bg-[#0a0a0f] border border-[#222230] rounded-lg overflow-hidden cursor-crosshair group"
+        className="relative cursor-crosshair rounded-lg overflow-hidden"
+        style={{
+          width: `${mapWidth}px`,
+          height: `${mapHeight}px`,
+          background: '#f8f9fc',
+          border: '1px solid #dde1ec',
+          backgroundImage: 'linear-gradient(rgba(99,115,145,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,115,145,0.07) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
       >
-        {/* Grid lines in minimap */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px]" />
+        {/* Center crosshair */}
+        <div className="absolute top-1/2 left-0 right-0 pointer-events-none" style={{ height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+        <div className="absolute left-1/2 top-0 bottom-0 pointer-events-none" style={{ width: '1px', background: 'rgba(0,0,0,0.08)' }} />
 
-        {/* Center origin cross (+) */}
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10 pointer-events-none" />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 pointer-events-none" />
-
-        {/* Render mini elements */}
+        {/* Elements as dots */}
         {elements.map((el) => {
           const miniX = (el.x + 1500) * scale;
           const miniY = (el.y + 1500) * scale;
-          const isSelected = store.selectedIds.includes(el.id);
-
+          const isSel = store.selectedIds.includes(el.id);
           return (
             <div
               key={el.id}
               style={{
+                position: 'absolute',
                 left: `${miniX}px`,
                 top: `${miniY}px`,
-                backgroundColor: isSelected ? '#38bdf8' : (el.color || '#facc15'),
+                width: el.category === 'architecture' ? '6px' : '4px',
+                height: el.category === 'architecture' ? '4px' : '4px',
+                background: isSel ? '#2563eb' : (el.color || '#ef4732'),
+                borderRadius: el.category === 'architecture' ? '1px' : '50%',
+                transform: 'translate(-50%, -50%)',
+                opacity: isSel ? 1 : 0.75,
+                outline: isSel ? '1.5px solid #2563eb' : 'none',
               }}
-              className={`absolute w-1.5 h-1.5 rounded-full -translate-x-1/2 -translate-y-1/2 shadow-sm ${
-                isSelected ? 'ring-2 ring-afina-400 z-10' : 'opacity-80'
-              }`}
               title={el.label || el.type}
             />
           );
         })}
 
-        {/* Viewport Box Indicator */}
+        {/* Viewport box */}
         <div
           style={{
+            position: 'absolute',
             left: `${viewX}px`,
             top: `${viewY}px`,
             width: `${Math.max(16, viewW)}px`,
             height: `${Math.max(12, viewH)}px`,
+            border: '2px solid #ef4732',
+            background: 'rgba(239,71,50,0.07)',
+            borderRadius: '3px',
+            pointerEvents: 'none',
+            transition: 'all 75ms',
           }}
-          className="absolute border-2 border-afina-400 bg-afina-500/15 rounded pointer-events-none transition-all duration-75 shadow-lg shadow-afina-500/20"
         />
       </div>
     </div>

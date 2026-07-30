@@ -1,12 +1,11 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
 import type { CanvasElement, FixtureType } from '@/lib/types';
 import { CanvasMinimap } from './CanvasMinimap';
-import { v4 as uuidv4 } from 'uuid';
 
 // Dynamic import for SSR compatibility
 const Stage = dynamic(() => import('react-konva').then((m) => m.Stage), { ssr: false });
@@ -24,51 +23,56 @@ declare global {
 }
 
 
-// ── GRID COMPONENT ────────────────────────────────────────
+// ── GRID COMPONENT ─────────────────────────────────────────
+// Renders in Konva world-space coordinates (inside Stage with scale/offset applied)
 function CanvasGrid({
-  width, height, gridPx, stageX, stageY, stageScale,
+  stageX, stageY, stageScale, canvasW, canvasH, gridPx,
 }: {
-  width: number; height: number; gridPx: number;
   stageX: number; stageY: number; stageScale: number;
+  canvasW: number; canvasH: number; gridPx: number;
 }) {
-  const scaledGrid = gridPx * stageScale;
-  const offsetX = (stageX % scaledGrid);
-  const offsetY = (stageY % scaledGrid);
+  const lines: React.ReactNode[] = [];
 
-  const verticals: number[] = [];
-  const horizontals: number[] = [];
+  // World coordinates of the visible area corners
+  const worldLeft   = -stageX / stageScale;
+  const worldTop    = -stageY / stageScale;
+  const worldRight  = worldLeft + canvasW / stageScale;
+  const worldBottom = worldTop  + canvasH / stageScale;
 
-  for (let x = offsetX; x < width; x += scaledGrid) verticals.push(x);
-  for (let y = offsetY; y < height; y += scaledGrid) horizontals.push(y);
+  // Snap start to nearest grid multiple
+  const startX = Math.floor(worldLeft  / gridPx) * gridPx;
+  const startY = Math.floor(worldTop   / gridPx) * gridPx;
 
-  const majorGridPx = scaledGrid * 5; // major grid every 5 cells
-  const majorOffsetX = stageX % majorGridPx;
-  const majorOffsetY = stageY % majorGridPx;
+  const majorEvery = 5;
 
-  const majorVerticals: number[] = [];
-  const majorHorizontals: number[] = [];
-  for (let x = majorOffsetX; x < width; x += majorGridPx) majorVerticals.push(x);
-  for (let y = majorOffsetY; y < height; y += majorGridPx) majorHorizontals.push(y);
+  for (let wx = startX; wx <= worldRight; wx += gridPx) {
+    const isMajor = Math.abs(Math.round(wx / gridPx) % majorEvery) === 0;
+    lines.push(
+      <Line
+        key={`vx${wx}`}
+        points={[wx, worldTop, wx, worldBottom]}
+        stroke={isMajor ? 'rgba(239,71,50,0.18)' : 'rgba(99,115,145,0.10)'}
+        strokeWidth={isMajor ? 1.5 : 1}
+        listening={false}
+      />
+    );
+  }
+  for (let wy = startY; wy <= worldBottom; wy += gridPx) {
+    const isMajor = Math.abs(Math.round(wy / gridPx) % majorEvery) === 0;
+    lines.push(
+      <Line
+        key={`hy${wy}`}
+        points={[worldLeft, wy, worldRight, wy]}
+        stroke={isMajor ? 'rgba(239,71,50,0.18)' : 'rgba(99,115,145,0.10)'}
+        strokeWidth={isMajor ? 1.5 : 1}
+        listening={false}
+      />
+    );
+  }
 
-  return (
-    <>
-      {/* Minor grid lines */}
-      {verticals.map((x) => (
-        <Line key={`v${x}`} points={[x, 0, x, height]} stroke="rgba(255,255,255,0.12)" strokeWidth={1} listening={false} />
-      ))}
-      {horizontals.map((y) => (
-        <Line key={`h${y}`} points={[0, y, width, y]} stroke="rgba(255,255,255,0.12)" strokeWidth={1} listening={false} />
-      ))}
-      {/* Major grid lines */}
-      {majorVerticals.map((x) => (
-        <Line key={`mv${x}`} points={[x, 0, x, height]} stroke="rgba(239,71,50,0.35)" strokeWidth={1.5} listening={false} />
-      ))}
-      {majorHorizontals.map((y) => (
-        <Line key={`mh${y}`} points={[0, y, width, y]} stroke="rgba(239,71,50,0.35)" strokeWidth={1.5} listening={false} />
-      ))}
-    </>
-  );
+  return <>{lines}</>;
 }
+
 
 // ── FIXTURE SYMBOL ────────────────────────────────────────
 function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
@@ -99,9 +103,10 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   };
 
   const def = getFixtureDef(el.type);
-  const color = isSelected ? '#60a5fa' : (el.color || def?.colorHex || '#facc15');
+  const color = el.color || def?.colorHex || '#ef4732';
   const hasConflict = el.dmx?.hasConflict;
-  const strokeColor = hasConflict ? '#ef4444' : (isSelected ? '#3b82f6' : color);
+  // Light theme: dark stroke, selected = blue outline
+  const strokeColor = hasConflict ? '#dc2626' : (isSelected ? '#2563eb' : '#1e293b');
 
   const renderSymbol = () => {
     switch (el.type) {
@@ -165,25 +170,6 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         );
       }
 
-      case 'wall': {
-        const w = (el.customProps?.width as number) ?? 100;
-        const h = (el.customProps?.height as number) ?? 100;
-        const fill = el.customProps?.fill as string ?? '#1e293b';
-        const stroke = el.customProps?.stroke as string ?? '#475569';
-        const opacity = el.customProps?.opacity as number ?? 1;
-        return (
-          <Group>
-            <Rect x={0} y={0} width={w} height={h} fill={fill}
-              stroke={isSelected ? '#3b82f6' : stroke} strokeWidth={isSelected ? 2 : 1}
-              opacity={opacity} />
-            {el.label && (
-              <Text text={el.label} x={w / 2} y={h / 2 - 7} fontSize={10}
-                fill="rgba(255,255,255,0.3)" align="center" offsetX={el.label.length * 3}
-                fontFamily="Inter, sans-serif" />
-            )}
-          </Group>
-        );
-      }
 
       case 'ellipsoidal': {
         const angle = el.angle ?? 26;
@@ -549,7 +535,7 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
             text={el.customName || el.label}
             x={-30} y={20}
             fontSize={9}
-            fill={isSelected ? (store.colorTheme === 'light' ? '#1d4ed8' : '#93c5fd') : (store.colorTheme === 'light' ? '#0f172a' : 'rgba(255,255,255,0.85)')}
+            fill={isSelected ? '#1d4ed8' : '#1e293b'}
             fontFamily="JetBrains Mono, monospace"
             width={60}
             align="center"
@@ -561,7 +547,7 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
             text={`${el.dmx.universe}/${el.dmx.address}`}
             x={-20} y={-28}
             fontSize={8}
-            fill={el.dmx.hasConflict ? '#ef4444' : (store.colorTheme === 'light' ? '#2563eb' : 'rgba(96,165,250,0.85)')}
+            fill={el.dmx.hasConflict ? '#dc2626' : '#1d4ed8'}
             fontFamily="JetBrains Mono, monospace"
             width={40}
             align="center"
@@ -865,9 +851,6 @@ export default function LightingCanvas() {
     store.updateElement(id, { x, y });
   }, [store, snapToGrid, snapToRiggingBar, elements]);
 
-  // Layer visibility lookup
-  const layerMap = Object.fromEntries(layers.map((l) => [l.id, l]));
-
   // ── DRAG-AND-DROP FROM PANEL ───────────────────────────
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -923,26 +906,17 @@ export default function LightingCanvas() {
     return activeLayerMap[layerId].visible;
   };
 
-  // Split elements by layer/category with fallback so NOTHING is ever hidden
-  const archElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'architecture' || el.layerId === 'layer_architecture'));
-  const riggingElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'rigging' || el.layerId === 'layer_rigging'));
-  const annotationElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'annotation' || el.layerId === 'layer_annotations'));
-  const categorizedIds = new Set([
-    ...archElements.map((e) => e.id),
-    ...riggingElements.map((e) => e.id),
-    ...annotationElements.map((e) => e.id),
-  ]);
-  const lightingElements = elements.filter((el) => !categorizedIds.has(el.id) && el.visible !== false && isLayerVisible(el.layerId));
+  // All visible elements — single unified list, no complex layer splits
+  const visibleElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId));
+  const focusEls = showFocusCoverage ? visibleElements.filter((el) => (el.angle ?? 0) > 0) : [];
 
-  const focusEls = showFocusCoverage
-    ? elements.filter((el) => el.angle && el.angle > 0 && isLayerVisible(el.layerId))
-    : [];
+  const [minimapVisible, setMinimapVisible] = useState(true);
 
   return (
     <div
       ref={containerRef}
       className="editor-canvas canvas-wrapper"
-      style={{ cursor: getCursor() }}
+      style={{ cursor: getCursor(), position: 'relative' }}
       onWheel={handleWheel}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
@@ -954,21 +928,39 @@ export default function LightingCanvas() {
         </div>
       )}
 
-      {/* Zoom indicator */}
-      <div className="absolute bottom-3 right-3 z-10 font-mono text-[10px] text-white/30 bg-editor-raised px-2 py-1 rounded border border-editor-border">
-        {Math.round(stageScale * 100)}%
+      {/* Zoom indicator — prominent */}
+      <div
+        style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 20 }}
+        className="flex items-center gap-2"
+      >
+        <button
+          onClick={() => { store.setStageScale(stageScale / 1.2); }}
+          className="w-7 h-7 flex items-center justify-center rounded bg-editor-raised border border-editor-border text-white/60 hover:text-white hover:bg-editor-hover text-base font-bold transition-colors"
+        >−</button>
+        <div className="font-mono text-xs font-bold text-afina-300 bg-editor-raised px-2.5 py-1 rounded border border-editor-border min-w-[52px] text-center">
+          {Math.round(stageScale * 100)}%
+        </div>
+        <button
+          onClick={() => { store.setStageScale(stageScale * 1.2); }}
+          className="w-7 h-7 flex items-center justify-center rounded bg-editor-raised border border-editor-border text-white/60 hover:text-white hover:bg-editor-hover text-base font-bold transition-colors"
+        >+</button>
+        <button
+          onClick={() => store.resetView()}
+          className="px-2 h-7 text-[10px] rounded bg-editor-raised border border-editor-border text-white/40 hover:text-white hover:bg-editor-hover transition-colors"
+        >Reset</button>
       </div>
 
-      {/* Snap indicator */}
-      {store.snapEnabled && (
-        <div className="absolute bottom-3 left-3 z-10 font-mono text-[10px] text-afina-400/60 flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-afina-500" />
-          Snap
-        </div>
-      )}
+      {/* Minimap toggle button */}
+      <button
+        onClick={() => setMinimapVisible((v) => !v)}
+        style={{ position: 'absolute', bottom: minimapVisible ? 148 : 12, left: 12, zIndex: 25 }}
+        className="px-2 py-1 text-[10px] font-mono rounded bg-editor-raised border border-editor-border text-afina-400 hover:text-white hover:bg-editor-hover transition-all"
+      >
+        {minimapVisible ? '⊠ Radar' : '⊞ Radar'}
+      </button>
 
       {/* Minimap Radar Navigator */}
-      <CanvasMinimap />
+      {minimapVisible && <CanvasMinimap />}
 
       <Stage
         ref={stageRef as any}
@@ -987,76 +979,37 @@ export default function LightingCanvas() {
         <Layer listening={false}>
           {gridVisible && (
             <CanvasGrid
-              width={dimensions.width / stageScale}
-              height={dimensions.height / stageScale}
+              stageX={stageX}
+              stageY={stageY}
+              stageScale={stageScale}
+              canvasW={dimensions.width}
+              canvasH={dimensions.height}
               gridPx={gridPx}
-              stageX={stageX / stageScale}
-              stageY={stageY / stageScale}
-              stageScale={1}
             />
           )}
         </Layer>
 
-        {/* ── ARCHITECTURE LAYER ─── */}
+        {/* ── ELEMENTS LAYER — all elements in ONE layer ─── */}
         <Layer>
-          {archElements.map((el) => (
-            <FixtureSymbol
-              key={el.id}
-              el={el}
-              isSelected={selectedIds.includes(el.id)}
-              onClick={() => selectElement(el.id)}
-              onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
-            />
-          ))}
-        </Layer>
-
-        {/* ── RIGGING LAYER ─── */}
-        <Layer>
-          {riggingElements.map((el) => (
-            <FixtureSymbol
-              key={el.id}
-              el={el}
-              isSelected={selectedIds.includes(el.id)}
-              onClick={() => selectElement(el.id)}
-              onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
-            />
-          ))}
-        </Layer>
-
-        {/* ── LIGHTING LAYER ─── */}
-        <Layer>
-          {/* Focus cones (behind fixtures) */}
+          {/* Focus cones behind fixtures */}
           {focusEls.map((el) => (
             <FocusCone key={`cone-${el.id}`} el={el} />
           ))}
-          {lightingElements.map((el) => (
+          {visibleElements.map((el) => (
             <FixtureSymbol
               key={el.id}
               el={el}
               isSelected={selectedIds.includes(el.id)}
               onClick={(e: unknown) => {
                 const evt = e as { evt: MouseEvent };
-                selectElement(el.id, evt.evt?.shiftKey ?? false);
+                selectElement(el.id, evt?.evt?.shiftKey ?? false);
               }}
               onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
             />
           ))}
         </Layer>
 
-        {/* ── ANNOTATION LAYER ─── */}
-        <Layer>
-          {annotationElements.map((el) => (
-            <FixtureSymbol
-              key={el.id}
-              el={el}
-              isSelected={selectedIds.includes(el.id)}
-              onClick={() => selectElement(el.id)}
-              onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
-            />
-          ))}
-        </Layer>
-
-        {/* ── SELECTION MARQUEE BOX LAYER ─── */}
+        {/* ── SELECTION MARQUEE ─── */}
         {selectionBox && (
           <Layer listening={false}>
             <Rect
@@ -1064,7 +1017,7 @@ export default function LightingCanvas() {
               y={Math.min(selectionBox.y1, selectionBox.y2)}
               width={Math.abs(selectionBox.x2 - selectionBox.x1)}
               height={Math.abs(selectionBox.y2 - selectionBox.y1)}
-              fill="rgba(59, 130, 246, 0.15)"
+              fill="rgba(59, 130, 246, 0.1)"
               stroke="#3b82f6"
               strokeWidth={1}
               dash={[4, 4]}

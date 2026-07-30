@@ -37,14 +37,14 @@ module.exports = {
           text:    '#ff3333',
           dim:     '#661111',
         },
-        // Editor surfaces
+        // Editor surfaces — Light theme native
         editor: {
-          bg:      '#0f0f13',
-          surface: '#18181f',
-          raised:  '#1f1f2a',
-          border:  '#2a2a38',
-          hover:   '#252532',
-          active:  '#2e2e40',
+          bg:      '#f0f2f7',
+          surface: '#ffffff',
+          raised:  '#f8f9fc',
+          border:  '#dde1ec',
+          hover:   '#eef0f7',
+          active:  '#e4e8f3',
         },
       },
       boxShadow: {
