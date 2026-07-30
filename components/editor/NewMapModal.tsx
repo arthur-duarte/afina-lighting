@@ -50,7 +50,18 @@ export function NewMapModal() {
     // 3. Add initial stage geometry
     if (stageType === 'preset') {
       const preset = STAGE_PRESETS.find((p) => p.id === selectedPresetId) ?? STAGE_PRESETS[0];
-      preset.elements.forEach((el) => addElement({ ...el }));
+      const minX = Math.min(...preset.elements.map((e) => e.x));
+      const minY = Math.min(...preset.elements.map((e) => e.y));
+
+      preset.elements.forEach((el) => {
+        const offsetX = el.x - minX;
+        const offsetY = el.y - minY;
+        addElement({
+          ...el,
+          x: 200 + offsetX,
+          y: 150 + offsetY,
+        });
+      });
     } else {
       const widthPx = customWidth * 50;
       const depthPx = customDepth * 50;
@@ -60,8 +71,8 @@ export function NewMapModal() {
         type: 'custom_stage',
         category: 'architecture',
         layerId: 'layer_architecture',
-        x: 400,
-        y: 250,
+        x: 450,
+        y: 300,
         rotation: 0,
         scaleX: 1,
         scaleY: 1,

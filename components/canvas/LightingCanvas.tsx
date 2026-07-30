@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
 import type { CanvasElement, FixtureType } from '@/lib/types';
+import { CanvasMinimap } from './CanvasMinimap';
 import { v4 as uuidv4 } from 'uuid';
 
 // Dynamic import for SSR compatibility
@@ -422,7 +423,6 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
           </Group>
         );
       }
-
       case 'scenery_curtain': {
         const w = (el.customProps?.width as number) ?? 200;
         return (
@@ -434,26 +434,80 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         );
       }
 
+      case 'wall': {
+        const w = (el.customProps?.width as number) ?? 100;
+        const h = (el.customProps?.height as number) ?? 100;
+        const isLight = store.colorTheme === 'light';
+        const fill = el.customProps?.fill as string ?? (isLight ? '#e2e8f0' : '#1e293b');
+        const stroke = el.customProps?.stroke as string ?? (isSelected ? '#38bdf8' : '#64748b');
+        const opacity = el.customProps?.opacity as number ?? 1;
+
+        return (
+          <Group>
+            <Rect
+              x={0} y={0} width={w} height={h}
+              fill={fill}
+              stroke={isSelected ? '#38bdf8' : stroke}
+              strokeWidth={isSelected ? 2.5 : 1.5}
+              opacity={opacity}
+              cornerRadius={3}
+            />
+            {el.label && (
+              <Text
+                text={el.label.toUpperCase()}
+                x={0} y={h / 2 - 8} width={w}
+                fontSize={11}
+                fontStyle="bold"
+                fill={isLight ? '#0f172a' : 'rgba(255,255,255,0.75)'}
+                align="center"
+                fontFamily="Inter, sans-serif"
+              />
+            )}
+          </Group>
+        );
+      }
+
       case 'custom_stage': {
         const w = (el.customProps?.width as number) ?? 500;
         const h = (el.customProps?.height as number) ?? 350;
         const varanda = (el.customProps?.varanda as number) ?? 80;
+        const isLight = store.colorTheme === 'light';
         return (
           <Group>
-            {/* Stage Floor */}
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="rgba(30, 41, 59, 0.5)" stroke={isSelected ? '#3b82f6' : '#475569'} strokeWidth={isSelected ? 2.5 : 1.5} />
+            {/* Stage Floor Background */}
+            <Rect
+              x={-w / 2} y={-h / 2} width={w} height={h}
+              fill={isLight ? '#f1f5f9' : '#1e293b'}
+              stroke={isSelected ? '#38bdf8' : '#64748b'}
+              strokeWidth={isSelected ? 3 : 2}
+              cornerRadius={2}
+            />
+            {/* Stage Floor Grid Hatch Lines */}
+            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'} strokeWidth={1} />
+            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'} strokeWidth={1} />
+
             {/* Varanda / Proscênio extending forward */}
-            <Rect x={-w / 2} y={h / 2} width={w} height={varanda}
-              fill="rgba(30, 41, 59, 0.3)" stroke={isSelected ? '#3b82f6' : '#334155'} strokeWidth={1} dash={[6, 4]} />
+            {varanda > 0 && (
+              <Rect
+                x={-w / 2} y={h / 2} width={w} height={varanda}
+                fill={isLight ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)'}
+                stroke={isSelected ? '#38bdf8' : '#475569'}
+                strokeWidth={1.5}
+                dash={[6, 4]}
+              />
+            )}
             {/* Line at Proscenium (Boca de cena) */}
-            <Line points={[-w / 2, h / 2, w / 2, h / 2]} stroke="#38bdf8" strokeWidth={2} />
+            <Line points={[-w / 2, h / 2, w / 2, h / 2]} stroke="#38bdf8" strokeWidth={3} />
+
+            {/* Labels */}
             <Text text="PALCO" x={-w / 2} y={-h / 4} width={w} align="center"
-              fontSize={14} fill="rgba(255,255,255,0.2)" fontStyle="bold" fontFamily="Inter, sans-serif" />
+              fontSize={16} fill={isLight ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.3)'} fontStyle="bold" fontFamily="Inter, sans-serif" />
             <Text text="BOCA DE CENA" x={-w / 2} y={h / 2 - 14} width={w} align="center"
-              fontSize={9} fill="#38bdf8" fontFamily="JetBrains Mono, monospace" />
-            <Text text="VARANDA / PROSCÊNIO" x={-w / 2} y={h / 2 + varanda / 2 - 6} width={w} align="center"
-              fontSize={9} fill="rgba(255,255,255,0.3)" fontFamily="JetBrains Mono, monospace" />
+              fontSize={10} fill="#0284c7" fontStyle="bold" fontFamily="JetBrains Mono, monospace" />
+            {varanda > 0 && (
+              <Text text="VARANDA / PROSCÊNIO" x={-w / 2} y={h / 2 + varanda / 2 - 6} width={w} align="center"
+                fontSize={9} fill={isLight ? '#475569' : 'rgba(255,255,255,0.4)'} fontFamily="JetBrains Mono, monospace" />
+            )}
           </Group>
         );
       }
@@ -912,6 +966,9 @@ export default function LightingCanvas() {
           Snap
         </div>
       )}
+
+      {/* Minimap Radar Navigator */}
+      <CanvasMinimap />
 
       <Stage
         ref={stageRef as any}

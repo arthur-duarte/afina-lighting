@@ -104,7 +104,21 @@ function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
   const { addElement } = useEditorStore();
 
   const handleLoad = () => {
-    preset.elements.forEach((el) => addElement({ ...el }));
+    const centerX = Math.round((-store.stageX + 350) / (store.stageScale || 1));
+    const centerY = Math.round((-store.stageY + 250) / (store.stageScale || 1));
+
+    const minX = Math.min(...preset.elements.map((e) => e.x));
+    const minY = Math.min(...preset.elements.map((e) => e.y));
+
+    preset.elements.forEach((el) => {
+      const offsetX = el.x - minX;
+      const offsetY = el.y - minY;
+      store.addElement({
+        ...el,
+        x: centerX + offsetX - 200,
+        y: centerY + offsetY - 150,
+      });
+    });
   };
 
   return (
