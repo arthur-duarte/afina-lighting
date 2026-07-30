@@ -858,15 +858,15 @@ export default function LightingCanvas() {
     });
   }, [addElement, stageX, stageY, stageScale, snapToGrid, snapToRiggingBar]);
 
-  // Build layerMap lookup table
-  const layerMap = (layers || []).reduce<Record<string, { visible: boolean; locked: boolean }>>((acc, l) => {
+  // Build activeLayerMap lookup table
+  const activeLayerMap = (layers || []).reduce<Record<string, { visible: boolean; locked: boolean }>>((acc, l) => {
     acc[l.id] = { visible: l.visible, locked: l.locked };
     return acc;
   }, {});
 
   const isLayerVisible = (layerId?: string) => {
-    if (!layerId || !layerMap[layerId]) return true;
-    return layerMap[layerId].visible;
+    if (!layerId || !activeLayerMap[layerId]) return true;
+    return activeLayerMap[layerId].visible;
   };
 
   // Split elements by layer/category with fallback so NOTHING is ever hidden
