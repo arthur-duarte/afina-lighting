@@ -1,0 +1,525 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   AFINA v2.0 — Design System Global
+   Fonts carregadas via next/font no layout.tsx
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Brand */
+    --afina-accent: 239 71 50;
+    --afina-accent-glow: rgba(239,71,50,0.18);
+
+    /* Canvas bg */
+    --canvas-bg: #0d0d12;
+
+    /* Transitions */
+    --t-fast: 100ms ease;
+    --t-base: 160ms ease;
+    --t-slow: 280ms ease;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #0d0d12;
+    color: #e2e2ee;
+    font-family: var(--font-inter, system-ui, sans-serif);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(239,71,50,0.5);
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background: rgba(239,71,50,0.25);
+    color: #fff;
+  }
+}
+
+/* ============================================================
+   EDITOR LAYOUT — Grid principal
+   ============================================================ */
+.editor-layout {
+  display: grid;
+  grid-template-areas:
+    "topbar  topbar   topbar"
+    "assets  canvas   inspector"
+    "seal    seal     seal";
+  grid-template-columns: 264px 1fr 272px;
+  grid-template-rows: 44px 1fr 32px;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #0d0d12;
+}
+
+.editor-topbar    { grid-area: topbar; }
+.editor-assets    { grid-area: assets; }
+.editor-canvas    { grid-area: canvas; }
+.editor-inspector { grid-area: inspector; }
+.editor-seal      { grid-area: seal; }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.editor-topbar {
+  background: #131318;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 4px;
+  z-index: 50;
+  /* subtle gradient top edge */
+  box-shadow: 0 1px 0 0 rgba(255,255,255,0.04), 0 2px 12px rgba(0,0,0,0.3);
+}
+
+/* ============================================================
+   SIDE PANELS
+   ============================================================ */
+.editor-assets,
+.editor-inspector {
+  background: #131318;
+  border-color: rgba(255,255,255,0.06);
+}
+.editor-assets   { border-right: 1px solid rgba(255,255,255,0.06); }
+.editor-inspector{ border-left:  1px solid rgba(255,255,255,0.06); }
+
+/* ============================================================
+   CANVAS
+   ============================================================ */
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--canvas-bg);
+  /* Subtle dot grid — the "paper" feel */
+  background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ============================================================
+   TECHNICAL SEAL — rodapé
+   ============================================================ */
+.editor-seal {
+  background: #0f0f14;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  font-size: 10px;
+  font-family: var(--font-jetbrains, monospace);
+  color: rgba(255,255,255,0.25);
+}
+
+/* ============================================================
+   COMPONENT CLASSES
+   ============================================================ */
+@layer components {
+
+  /* ── Panel header label ── */
+  .panel-section {
+    @apply flex items-center px-3 py-2 border-b;
+    border-color: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .panel-label {
+    @apply text-[10px] font-bold tracking-[0.12em] uppercase select-none;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Buttons ── */
+  .icon-btn {
+    @apply flex items-center justify-center w-7 h-7 rounded-lg
+           text-white/50 hover:text-white/90
+           transition-all duration-150 cursor-pointer
+           active:scale-90;
+    background: transparent;
+  }
+  .icon-btn:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .icon-btn-active {
+    @apply flex items-center justify-center w-7 h-7 rounded-lg
+           transition-all duration-150 cursor-pointer;
+    color: rgb(var(--afina-accent));
+    background: rgba(239,71,50,0.12);
+    box-shadow: inset 0 0 0 1px rgba(239,71,50,0.25);
+  }
+
+  /* ── Menu ── */
+  .menu-item {
+    @apply flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg
+           text-white/70 hover:text-white cursor-pointer transition-colors
+           duration-100 select-none w-full;
+  }
+  .menu-item:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* ── Keyboard shortcut badge ── */
+  .kbd {
+    @apply font-mono text-[9px] rounded px-1 py-0.5 leading-none;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* ── Form fields ── */
+  .input-field {
+    @apply w-full rounded-lg px-2.5 py-1.5 text-xs text-white
+           outline-none transition-all duration-150;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    placeholder-color: rgba(255,255,255,0.2);
+  }
+  .input-field::placeholder { color: rgba(255,255,255,0.2); }
+  .input-field:focus {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(239,71,50,0.5);
+    box-shadow: 0 0 0 3px rgba(239,71,50,0.08);
+  }
+
+  .select-field {
+    @apply w-full rounded-lg px-2.5 py-1.5 text-xs text-white
+           outline-none appearance-none transition-all duration-150;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .select-field:focus {
+    border-color: rgba(239,71,50,0.5);
+    box-shadow: 0 0 0 3px rgba(239,71,50,0.08);
+  }
+  .select-field option {
+    background: #1a1a22;
+    color: #e2e2ee;
+  }
+
+  /* ── DMX badges ── */
+  .badge-dmx {
+    @apply font-mono text-[10px] px-1.5 py-0.5 rounded;
+    background: rgba(59,130,246,0.12);
+    color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+
+  .badge-conflict {
+    @apply font-mono text-[10px] px-1.5 py-0.5 rounded animate-pulse;
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  /* ── Fixture card no AssetPanel ── */
+  .fixture-card {
+    @apply flex items-center gap-2.5 px-2.5 py-2 mx-2 rounded-xl
+           cursor-grab select-none
+           transition-all duration-150
+           active:cursor-grabbing active:scale-[0.97];
+    border: 1px solid transparent;
+  }
+  .fixture-card:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  .fixture-icon {
+    @apply flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 text-sm;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* ── Layer item ── */
+  .layer-item {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-xl
+           cursor-pointer transition-all duration-150 group;
+  }
+  .layer-item:hover {
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* ── Separator ── */
+  .divider {
+    @apply h-px my-1 mx-3;
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* ── Primary button ── */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg
+           text-white text-xs font-semibold transition-all duration-150
+           active:scale-[0.97] cursor-pointer select-none;
+    background: rgb(var(--afina-accent));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 2px 8px rgba(239,71,50,0.25);
+  }
+  .btn-primary:hover {
+    background: rgba(239,71,50,0.85);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 16px rgba(239,71,50,0.35);
+  }
+
+  /* ── Secondary button ── */
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg
+           text-white/70 hover:text-white text-xs font-medium
+           transition-all duration-150 active:scale-[0.97] cursor-pointer select-none;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.14);
+  }
+
+  /* ── Ghost button ── */
+  .btn-ghost {
+    @apply flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg
+           text-white/50 hover:text-white text-xs
+           transition-colors duration-150 cursor-pointer select-none;
+  }
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.05);
+  }
+}
+
+/* ============================================================
+   DROPDOWN / FLOATING PANELS
+   ============================================================ */
+.dropdown-panel {
+  background: #1a1a22;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 8px 32px rgba(0,0,0,0.5),
+    0 2px 8px rgba(0,0,0,0.3);
+  padding: 6px;
+  animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ============================================================
+   TOOLTIP (nativo CSS, usado via title + custom data attrs)
+   ============================================================ */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222230;
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+[data-tooltip]:hover::after { opacity: 1; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in         { animation: fade-in         0.2s ease-out both; }
+.animate-slide-in-left   { animation: slide-in-left   0.2s ease-out both; }
+.animate-slide-in-right  { animation: slide-in-right  0.2s ease-out both; }
+.animate-scale-in        { animation: scale-in        0.2s ease-out both; }
+
+/* ============================================================
+   CANVAS TOOL CURSOR HINTS
+   ============================================================ */
+.canvas-wrapper.tool-select   { cursor: default; }
+.canvas-wrapper.tool-pan      { cursor: grab; }
+.canvas-wrapper.tool-panning  { cursor: grabbing; }
+.canvas-wrapper.tool-insert   { cursor: crosshair; }
+.canvas-wrapper.tool-draw     { cursor: crosshair; }
+
+/* ============================================================
+   DRAG GHOST (melhora o drag visual)
+   ============================================================ */
+.fixture-card:active {
+  opacity: 0.8;
+}
+
+/* ============================================================
+   SECTION DIVIDERS (accordion)
+   ============================================================ */
+.accordion-header {
+  @apply flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none transition-colors;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.accordion-header:hover {
+  background: rgba(255,255,255,0.025);
+}
+
+/* ============================================================
+   FOCUS INDICATORS (accessibility + aesthetics)
+   ============================================================ */
+*:focus-visible {
+  outline: 2px solid rgba(239,71,50,0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   PATCH TABLE ROWS
+   ============================================================ */
+.patch-row-even  { background: transparent; }
+.patch-row-odd   { background: rgba(255,255,255,0.015); }
+.patch-row-conflict {
+  background: rgba(239,68,68,0.06);
+  animation: conflictPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes conflictPulse {
+  0%, 100% { background: rgba(239,68,68,0.06); }
+  50%       { background: rgba(239,68,68,0.12); }
+}
+
+/* ============================================================
+   PROPERTY INSPECTOR — color swatches
+   ============================================================ */
+.gel-swatch {
+  @apply w-4 h-4 rounded-sm border flex-shrink-0;
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* ============================================================
+   BACKSTAGE MODE — Darkroom Night Vision
+   Preserva a visão noturna durante montagem de espetáculo
+   ============================================================ */
+.backstage-mode {
+  --afina-accent: 180 0 0;
+}
+
+.backstage-mode body {
+  background-color: #060001 !important;
+}
+
+.backstage-mode .editor-layout {
+  background-color: #060001 !important;
+}
+
+/* Todos os painéis ficam quase preto com toque vermelho */
+.backstage-mode .editor-topbar,
+.backstage-mode .editor-assets,
+.backstage-mode .editor-inspector,
+.backstage-mode .editor-seal {
+  background-color: #0a0002 !important;
+  border-color: rgba(180,0,0,0.25) !important;
+}
+
+/* Texto → vermelho escuro */
+.backstage-mode .editor-topbar,
+.backstage-mode .editor-assets,
+.backstage-mode .editor-inspector {
+  color: rgba(200,30,30,0.8) !important;
+}
+
+/* Ícones e textos mistos */
+.backstage-mode span,
+.backstage-mode p,
+.backstage-mode div,
+.backstage-mode button,
+.backstage-mode label {
+  color: rgba(180,20,20,0.75) !important;
+}
+
+/* Canvas: filtro vermelho para manter legibilidade no escuro */
+.backstage-mode .canvas-wrapper {
+  filter: sepia(1) saturate(2) hue-rotate(-20deg) brightness(0.5);
+  transition: filter 0.4s ease;
+}
+
+/* Inputs / selects */
+.backstage-mode .input-field,
+.backstage-mode .select-field {
+  background: rgba(80,0,0,0.3) !important;
+  border-color: rgba(160,0,0,0.3) !important;
+  color: rgba(200,30,30,0.8) !important;
+}
+
+/* Botões primários */
+.backstage-mode .btn-primary {
+  background: rgba(160,0,0,0.6) !important;
+  box-shadow: 0 0 12px rgba(200,0,0,0.2) !important;
+}
+
+/* Transição suave ao entrar/sair do backstage mode */
+.editor-topbar,
+.editor-assets,
+.editor-inspector,
+.editor-seal {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+}
+
+/* ============================================================
+   PRINT / EXPORT OVERRIDE
+   ============================================================ */
+@media print {
+  .editor-layout { display: none; }
+}
+
+/* ============================================================
+   WELCOME SCREEN (landing antes de abrir o editor)
+   ============================================================ */
+.welcome-gradient {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(239,71,50,0.12) 0%, transparent 70%);
+}
