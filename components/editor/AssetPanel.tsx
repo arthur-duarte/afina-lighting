@@ -341,7 +341,8 @@ export function AssetPanel() {
               <div className="px-2 space-y-1">
                 <button
                   onClick={() => {
-                    const id = store.addElement({
+                    const storeState = useEditorStore.getState();
+                    const id = storeState.addElement({
                       type: 'text',
                       category: 'annotation',
                       layerId: 'layer_annotation',
@@ -359,7 +360,7 @@ export function AssetPanel() {
                       visible: true,
                       customProps: { fontSize: 18 },
                     });
-                    store.selectElement(id);
+                    storeState.selectElement(id);
                   }}
                   className="fixture-card w-full text-left flex items-center gap-2.5 p-2 rounded-lg border border-slate-200 hover:border-afina-500 hover:bg-slate-50 transition-all"
                 >
