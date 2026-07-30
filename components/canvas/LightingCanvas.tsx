@@ -1,30 +1,19 @@
 'use client';
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { Stage, Layer, Line, Rect, Circle, Text, Group, Transformer } from 'react-konva';
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
 import type { CanvasElement, FixtureType } from '@/lib/types';
 import { CanvasMinimap } from './CanvasMinimap';
-
-// Dynamic import for SSR compatibility
-const Stage = dynamic(() => import('react-konva').then((m) => m.Stage), { ssr: false });
-const Layer = dynamic(() => import('react-konva').then((m) => m.Layer), { ssr: false });
-const Line = dynamic(() => import('react-konva').then((m) => m.Line), { ssr: false });
-const Rect = dynamic(() => import('react-konva').then((m) => m.Rect), { ssr: false });
-const Circle = dynamic(() => import('react-konva').then((m) => m.Circle), { ssr: false });
-const Text = dynamic(() => import('react-konva').then((m) => m.Text), { ssr: false });
-const Group = dynamic(() => import('react-konva').then((m) => m.Group), { ssr: false });
-const Transformer = dynamic(() => import('react-konva').then((m) => m.Transformer), { ssr: false });
 
 // Make stage available globally for PNG/PDF export
 declare global {
   interface Window { __afinaStageRef?: unknown; }
 }
 
-
 // ── GRID COMPONENT ─────────────────────────────────────────
-// Renders in Konva world-space coordinates (inside Stage with scale/offset applied)
+// Renders in Konva world-space coordinates
 function CanvasGrid({
   stageX, stageY, stageScale, canvasW, canvasH, gridPx,
 }: {
@@ -33,13 +22,11 @@ function CanvasGrid({
 }) {
   const lines: React.ReactNode[] = [];
 
-  // World coordinates of the visible area corners
   const worldLeft   = -stageX / stageScale;
   const worldTop    = -stageY / stageScale;
   const worldRight  = worldLeft + canvasW / stageScale;
   const worldBottom = worldTop  + canvasH / stageScale;
 
-  // Snap start to nearest grid multiple
   const startX = Math.floor(worldLeft  / gridPx) * gridPx;
   const startY = Math.floor(worldTop   / gridPx) * gridPx;
 
@@ -51,8 +38,8 @@ function CanvasGrid({
       <Line
         key={`vx${wx}`}
         points={[wx, worldTop, wx, worldBottom]}
-        stroke={isMajor ? 'rgba(239,71,50,0.18)' : 'rgba(99,115,145,0.10)'}
-        strokeWidth={isMajor ? 1.5 : 1}
+        stroke={isMajor ? 'rgba(239,71,50,0.30)' : 'rgba(148,163,184,0.22)'}
+        strokeWidth={isMajor ? 1.5 : 0.8}
         listening={false}
       />
     );
@@ -63,8 +50,8 @@ function CanvasGrid({
       <Line
         key={`hy${wy}`}
         points={[worldLeft, wy, worldRight, wy]}
-        stroke={isMajor ? 'rgba(239,71,50,0.18)' : 'rgba(99,115,145,0.10)'}
-        strokeWidth={isMajor ? 1.5 : 1}
+        stroke={isMajor ? 'rgba(239,71,50,0.30)' : 'rgba(148,163,184,0.22)'}
+        strokeWidth={isMajor ? 1.5 : 0.8}
         listening={false}
       />
     );
@@ -73,8 +60,7 @@ function CanvasGrid({
   return <>{lines}</>;
 }
 
-
-// ── FIXTURE SYMBOL ────────────────────────────────────────
+// ── FIXTURE & ARCHITECTURE SYMBOL ─────────────────────────
 function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   el: CanvasElement; isSelected: boolean; onClick: (e: unknown) => void; onDragEnd?: (e: { target: { x: () => number; y: () => number } }) => void;
 }) {
@@ -94,7 +80,10 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
     const node = groupRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
-    const rotation = Math.round(node.rotation());
+    const rotation = node.rotation();
+    node.scaleX(1);
+    node.scaleY(1);
+
     store.updateElement(el.id, {
       scaleX: Math.max(0.1, Math.min(10, scaleX)),
       scaleY: Math.max(0.1, Math.min(10, scaleY)),
@@ -105,8 +94,10 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   const def = getFixtureDef(el.type);
   const color = el.color || def?.colorHex || '#ef4732';
   const hasConflict = el.dmx?.hasConflict;
-  // Light theme: dark stroke, selected = blue outline
-  const strokeColor = hasConflict ? '#dc2626' : (isSelected ? '#2563eb' : '#1e293b');
+
+  // High contrast stroke for light background
+  const strokeColor = hasConflict ? '#dc2626' : (isSelected ? '#2563eb' : '#0f172a');
+  const strokeWidth = isSelected ? 2.5 : 1.5;
 
   const renderSymbol = () => {
     switch (el.type) {
@@ -118,73 +109,126 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const h = (el.customProps?.height as number) ?? 8;
         return (
           <Group>
-            <Rect x={0} y={-h / 2} width={w} height={h}
-              fill="#334155" stroke="#94a3b8" strokeWidth={isSelected ? 2 : 1} cornerRadius={2} />
+            <Rect
+              x={0} y={-h / 2} width={w} height={h}
+              fill="#334155" stroke={isSelected ? '#2563eb' : '#0f172a'}
+              strokeWidth={strokeWidth} cornerRadius={2}
+            />
             {el.type.startsWith('truss') && (
               <>
-                <Line points={[0, -h / 2, w, h / 2]} stroke="#64748b" strokeWidth={1} />
-                <Line points={[0, h / 2, w, -h / 2]} stroke="#64748b" strokeWidth={1} />
+                <Line points={[0, -h / 2, w, h / 2]} stroke="#94a3b8" strokeWidth={1} />
+                <Line points={[0, h / 2, w, -h / 2]} stroke="#94a3b8" strokeWidth={1} />
               </>
             )}
-            <Text text={el.label} x={4} y={-14} fontSize={9} fill="#94a3b8" fontFamily="JetBrains Mono, monospace" />
+            {el.label && (
+              <Text
+                text={el.label} x={4} y={-14} fontSize={10} fontStyle="bold"
+                fill="#0f172a" fontFamily="JetBrains Mono, monospace"
+              />
+            )}
           </Group>
         );
       }
 
-      case 'tripod': {
-        const s = 16;
+      case 'wall': {
+        const w = (el.customProps?.width as number) ?? 100;
+        const h = (el.customProps?.height as number) ?? 100;
+        const fill = (el.customProps?.fill as string) || '#ffffff';
+        const opacity = (el.customProps?.opacity as number) ?? 1;
+
         return (
           <Group>
-            <Line points={[0, 0, 0, -s]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
-            <Line points={[0, 0, -s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
-            <Line points={[0, 0, s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
-            <Circle radius={4} fill="#64748b" stroke={strokeColor} strokeWidth={1} />
-            <Text text={el.label || 'Tripé'} x={-20} y={s + 4} fontSize={8} fill="rgba(255,255,255,0.5)" width={40} align="center" fontFamily="JetBrains Mono, monospace" />
+            <Rect
+              x={0} y={0} width={w} height={h}
+              fill={fill}
+              stroke={isSelected ? '#2563eb' : '#0f172a'}
+              strokeWidth={isSelected ? 3 : 2}
+              opacity={opacity}
+              cornerRadius={2}
+            />
+            {el.label && (
+              <Text
+                text={el.label.toUpperCase()}
+                x={0} y={h / 2 - 7} width={w}
+                fontSize={11}
+                fontStyle="bold"
+                fill="#0f172a"
+                align="center"
+                fontFamily="Inter, sans-serif"
+              />
+            )}
           </Group>
         );
       }
 
-      case 'tower': {
-        const w = 24, h = 24;
+      case 'custom_stage':
+      case 'stage_polygon': {
+        const w = (el.customProps?.width as number) ?? 500;
+        const h = (el.customProps?.height as number) ?? 350;
+        const varanda = (el.customProps?.varanda as number) ?? 80;
+
         return (
           <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h} fill="rgba(71,85,105,0.3)" stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 1.5} />
-            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke={strokeColor} strokeWidth={1} />
-            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke={strokeColor} strokeWidth={1} />
-            <Circle radius={3} fill="#38bdf8" />
-            <Text text={el.label || 'Torre'} x={-20} y={h / 2 + 3} fontSize={8} fill="rgba(255,255,255,0.5)" width={40} align="center" fontFamily="JetBrains Mono, monospace" />
+            {/* Stage Floor Background */}
+            <Rect
+              x={-w / 2} y={-h / 2} width={w} height={h}
+              fill="#ffffff"
+              stroke={isSelected ? '#2563eb' : '#0f172a'}
+              strokeWidth={isSelected ? 3.5 : 2.5}
+              cornerRadius={2}
+            />
+            {/* Stage Floor Hatch Grid Lines */}
+            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke="rgba(148,163,184,0.25)" strokeWidth={1} />
+            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke="rgba(148,163,184,0.25)" strokeWidth={1} />
+
+            {/* Varanda / Proscênio */}
+            {varanda > 0 && (
+              <Rect
+                x={-w / 2} y={h / 2} width={w} height={varanda}
+                fill="#f1f5f9"
+                stroke={isSelected ? '#2563eb' : '#475569'}
+                strokeWidth={1.5}
+                dash={[6, 4]}
+              />
+            )}
+            {/* Boca de cena line */}
+            <Line points={[-w / 2, h / 2, w / 2, h / 2]} stroke="#0284c7" strokeWidth={3.5} />
+
+            {/* Labels */}
+            <Text
+              text={el.label ? el.label.toUpperCase() : 'PALCO PRINCIPAL'}
+              x={-w / 2} y={-h / 4} width={w} align="center"
+              fontSize={16} fill="#0f172a" fontStyle="bold" fontFamily="Inter, sans-serif"
+            />
+            <Text
+              text="BOCA DE CENA" x={-w / 2} y={h / 2 - 14} width={w} align="center"
+              fontSize={10} fill="#0284c7" fontStyle="bold" fontFamily="JetBrains Mono, monospace"
+            />
+            {varanda > 0 && (
+              <Text
+                text="VARANDA / PROSCÊNIO" x={-w / 2} y={h / 2 + varanda / 2 - 6} width={w} align="center"
+                fontSize={9} fill="#475569" fontStyle="bold" fontFamily="JetBrains Mono, monospace"
+              />
+            )}
           </Group>
         );
       }
-
-      case 'floor_base': {
-        const s = 14;
-        return (
-          <Group>
-            <Line points={[-s, s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
-            <Line points={[s, s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
-            <Line points={[0, -s, 0, 0]} stroke={strokeColor} strokeWidth={isSelected ? 2.5 : 2} lineCap="round" />
-            <Circle radius={3.5} fill="#facc15" stroke={strokeColor} strokeWidth={1} />
-            <Text text={el.label || 'Pé de Galinha'} x={-35} y={s + 4} fontSize={8} fill="rgba(255,255,255,0.5)" width={70} align="center" fontFamily="JetBrains Mono, monospace" />
-          </Group>
-        );
-      }
-
 
       case 'ellipsoidal': {
         const angle = el.angle ?? 26;
         const size = 18;
         return (
           <Group>
-            {/* Body triangle */}
-            <Line points={[-size * 0.6, -size * 0.4, size * 0.6, -size * 0.4, 0, size * 0.7]}
-              closed fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            {/* Beam lines */}
-            <Line points={[0, size * 0.7, -size * 0.5, size * 1.4]} stroke={`${color}60`} strokeWidth={1} />
-            <Line points={[0, size * 0.7, size * 0.5, size * 1.4]} stroke={`${color}60`} strokeWidth={1} />
-            {/* Angle text */}
-            <Text text={`${angle}°`} x={-10} y={-size * 0.35} fontSize={8}
-              fill="rgba(255,255,255,0.5)" fontFamily="JetBrains Mono, monospace" />
+            <Line
+              points={[-size * 0.6, -size * 0.4, size * 0.6, -size * 0.4, 0, size * 0.7]}
+              closed fill={color} stroke={strokeColor} strokeWidth={strokeWidth}
+            />
+            <Line points={[0, size * 0.7, -size * 0.5, size * 1.4]} stroke="#0f172a" strokeWidth={1} />
+            <Line points={[0, size * 0.7, size * 0.5, size * 1.4]} stroke="#0f172a" strokeWidth={1} />
+            <Text
+              text={`${angle}°`} x={-10} y={-size * 0.35} fontSize={8} fontStyle="bold"
+              fill="#0f172a" fontFamily="JetBrains Mono, monospace"
+            />
           </Group>
         );
       }
@@ -193,10 +237,10 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const r = 14;
         return (
           <Group>
-            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            <Circle radius={r * 0.7} fill="none" stroke={`${color}50`} strokeWidth={1} />
-            <Circle radius={r * 0.4} fill="none" stroke={`${color}50`} strokeWidth={1} />
-            <Circle radius={r * 0.15} fill={strokeColor} />
+            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Circle radius={r * 0.7} fill="none" stroke="#0f172a" strokeWidth={1} opacity={0.6} />
+            <Circle radius={r * 0.4} fill="none" stroke="#0f172a" strokeWidth={1} opacity={0.6} />
+            <Circle radius={r * 0.15} fill="#0f172a" />
           </Group>
         );
       }
@@ -205,9 +249,9 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const r = 14;
         return (
           <Group>
-            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            <Line points={[-r, r * 0.3, r, r * 0.3]} stroke={strokeColor} strokeWidth={2} />
-            <Circle radius={r * 0.2} fill={strokeColor} />
+            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Line points={[-r, r * 0.3, r, r * 0.3]} stroke="#0f172a" strokeWidth={2} />
+            <Circle radius={r * 0.2} fill="#0f172a" />
           </Group>
         );
       }
@@ -216,9 +260,11 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const w = 20, h = 16;
         return (
           <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={3}
-              fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            <Circle radius={5} fill={`${color}80`} stroke={strokeColor} strokeWidth={1} />
+            <Rect
+              x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={3}
+              fill={color} stroke={strokeColor} strokeWidth={strokeWidth}
+            />
+            <Circle radius={5} fill="#ffffff" stroke="#0f172a" strokeWidth={1} />
           </Group>
         );
       }
@@ -227,12 +273,10 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const r = 14;
         return (
           <Group>
-            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            {/* LED dot matrix */}
+            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
             {[-5, 0, 5].map((dx) =>
               [-5, 0, 5].map((dy) => (
-                <Circle key={`${dx}${dy}`} x={dx} y={dy} radius={2.5}
-                  fill={strokeColor} opacity={0.7} />
+                <Circle key={`${dx}${dy}`} x={dx} y={dy} radius={2} fill="#0f172a" />
               ))
             )}
           </Group>
@@ -244,11 +288,15 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const cellW = w / cells;
         return (
           <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="#1e1b4b" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
+            <Rect
+              x={-w / 2} y={-h / 2} width={w} height={h}
+              fill={color} stroke={strokeColor} strokeWidth={strokeWidth} cornerRadius={2}
+            />
             {Array.from({ length: cells }).map((_, i) => (
-              <Rect key={i} x={-w / 2 + i * cellW + 2} y={-h / 2 + 3}
-                width={cellW - 4} height={h - 6} fill={color} opacity={0.7} cornerRadius={1} />
+              <Rect
+                key={i} x={-w / 2 + i * cellW + 2} y={-h / 2 + 3}
+                width={cellW - 3} height={h - 6} fill="#ffffff" stroke="#0f172a" strokeWidth={0.8}
+              />
             ))}
           </Group>
         );
@@ -257,256 +305,55 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
       case 'moving_spot':
       case 'moving_beam':
       case 'moving_wash': {
-        const r = 15;
-        const letter = el.type === 'moving_spot' ? 'S' : el.type === 'moving_beam' ? 'B' : 'W';
-        return (
-          <Group>
-            <Circle radius={r} fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            <Circle radius={r + 4} fill="none" stroke={strokeColor} strokeWidth={1} opacity={0.4} />
-            <Text text={letter} x={-4} y={-5} fontSize={10} fill="#0f0f13"
-              fontStyle="bold" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-
-      case 'svoboda': {
-        const w = 60, h = 12;
-        const bulbs = 8;
-        const bw = w / bulbs;
-        return (
-          <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="#451a03" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} />
-            {Array.from({ length: bulbs }).map((_, i) => (
-              <Circle key={i} x={-w / 2 + i * bw + bw / 2} y={0} radius={3.5}
-                fill={color} opacity={0.8} />
-            ))}
-          </Group>
-        );
-      }
-
-      case 'minibruta': {
-        const size = 28;
-        const cols = 4, rows = 2;
-        const cw = size / cols, ch = size / rows;
-        return (
-          <Group>
-            <Rect x={-size / 2} y={-size / 4} width={size} height={size / 2}
-              fill="#292524" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
-            {Array.from({ length: rows }).map((_, r) =>
-              Array.from({ length: cols }).map((_, c) => (
-                <Circle key={`${r}${c}`}
-                  x={-size / 2 + c * cw + cw / 2}
-                  y={-size / 4 + r * ch + ch / 2}
-                  radius={4} fill={color} opacity={0.85} />
-              ))
-            )}
-          </Group>
-        );
-      }
-
-      case 'strobe': {
-        const w = 30, h = 18;
-        return (
-          <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="#1e293b" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={3} />
-            <Line points={[-4, -6, 0, 0, 4, -6, 8, 6, -8, 6, -4, -6]}
-              closed fill="#fef08a" stroke="#fbbf24" strokeWidth={1} scaleX={0.6} scaleY={0.6} />
-          </Group>
-        );
-      }
-
-      case 'uv': {
-        const r = 13;
-        return (
-          <Group>
-            <Circle radius={r} fill="#4c1d95" stroke="#7c3aed" strokeWidth={isSelected ? 2 : 1.5} />
-            <Text text="UV" x={-8} y={-6} fontSize={9} fill="#c4b5fd"
-              fontStyle="bold" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-
-      case 'fogmachine': {
-        const size = 22;
-        return (
-          <Group>
-            <Rect x={-size / 2} y={-size / 2} width={size} height={size}
-              fill="#1e293b" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={3} />
-            {/* Cloud wisps */}
-            <Circle x={-4} y={-4} radius={5} fill="rgba(148,163,184,0.3)" />
-            <Circle x={2} y={-6} radius={4} fill="rgba(148,163,184,0.3)" />
-            <Circle x={0} y={-2} radius={6} fill="rgba(148,163,184,0.2)" />
-          </Group>
-        );
-      }
-
-      case 'mirrorball': {
         const r = 16;
         return (
           <Group>
-            <Circle radius={r} fill="#334155" stroke="#e2e8f0" strokeWidth={isSelected ? 2 : 1} />
-            {/* Dot grid to simulate mirrors */}
-            {[-8, -4, 0, 4, 8].map((dx) =>
-              [-8, -4, 0, 4, 8].map((dy) => {
-                if (dx * dx + dy * dy > r * r) return null;
-                return <Rect key={`${dx}${dy}`} x={dx - 1.5} y={dy - 1.5} width={3} height={3}
-                  fill="rgba(255,255,255,0.6)" cornerRadius={0.5} />;
-              })
-            )}
-          </Group>
-        );
-      }
-
-      case 'setlight': {
-        const w = 36, h = 20;
-        return (
-          <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="#451a03" stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
-            <Circle x={0} y={0} radius={7} fill={color} opacity={0.8} />
-            <Circle x={0} y={0} radius={3} fill="#fff" opacity={0.4} />
-          </Group>
-        );
-      }
-
-      case 'scenery_rect': {
-        const w = (el.customProps?.width as number) ?? 120;
-        const h = (el.customProps?.height as number) ?? 60;
-        return (
-          <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="rgba(71,85,105,0.35)" stroke={isSelected ? '#3b82f6' : '#64748b'} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={4} />
-            <Text text={el.label || 'Cenário'} x={-w / 2} y={-6} width={w} align="center"
-              fontSize={10} fill="rgba(255,255,255,0.8)" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-
-      case 'scenery_circle': {
-        const r = (el.customProps?.radius as number) ?? 40;
-        return (
-          <Group>
-            <Circle radius={r} fill="rgba(71,85,105,0.35)" stroke={isSelected ? '#3b82f6' : '#64748b'} strokeWidth={isSelected ? 2 : 1.5} />
-            <Text text={el.label || 'Objeto'} x={-r} y={-6} width={r * 2} align="center"
-              fontSize={10} fill="rgba(255,255,255,0.8)" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-
-      case 'scenery_platform': {
-        const w = (el.customProps?.width as number) ?? 140;
-        const h = (el.customProps?.height as number) ?? 70;
-        return (
-          <Group>
-            <Rect x={-w / 2} y={-h / 2} width={w} height={h}
-              fill="rgba(120,53,15,0.4)" stroke={isSelected ? '#3b82f6' : '#b45309'} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
-            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke="rgba(180,83,9,0.3)" strokeWidth={1} />
-            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke="rgba(180,83,9,0.3)" strokeWidth={1} />
-            <Text text={el.label || 'Praticável'} x={-w / 2} y={-6} width={w} align="center"
-              fontSize={10} fill="#fde68a" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-      case 'scenery_curtain': {
-        const w = (el.customProps?.width as number) ?? 200;
-        return (
-          <Group>
-            <Line points={[-w / 2, 0, w / 2, 0]} stroke={isSelected ? '#3b82f6' : '#94a3b8'} strokeWidth={6} lineCap="round" />
-            <Text text={el.label || 'Cortina / Perneta'} x={-w / 2} y={-16} width={w} align="center"
-              fontSize={9} fill="rgba(255,255,255,0.5)" fontFamily="Inter, sans-serif" />
-          </Group>
-        );
-      }
-
-      case 'wall': {
-        const w = (el.customProps?.width as number) ?? 100;
-        const h = (el.customProps?.height as number) ?? 100;
-        const isLight = store.colorTheme === 'light';
-        const fill = el.customProps?.fill as string ?? (isLight ? '#e2e8f0' : '#1e293b');
-        const stroke = el.customProps?.stroke as string ?? (isSelected ? '#38bdf8' : '#64748b');
-        const opacity = el.customProps?.opacity as number ?? 1;
-
-        return (
-          <Group>
+            {/* Outer base box */}
             <Rect
-              x={0} y={0} width={w} height={h}
-              fill={fill}
-              stroke={isSelected ? '#38bdf8' : stroke}
-              strokeWidth={isSelected ? 2.5 : 1.5}
-              opacity={opacity}
-              cornerRadius={3}
+              x={-r * 0.85} y={-r * 0.85} width={r * 1.7} height={r * 1.7}
+              fill="#ffffff" stroke={strokeColor} strokeWidth={1.5} cornerRadius={4}
             />
-            {el.label && (
-              <Text
-                text={el.label.toUpperCase()}
-                x={0} y={h / 2 - 8} width={w}
-                fontSize={11}
-                fontStyle="bold"
-                fill={isLight ? '#0f172a' : 'rgba(255,255,255,0.75)'}
-                align="center"
-                fontFamily="Inter, sans-serif"
-              />
-            )}
+            {/* Head circle */}
+            <Circle radius={r * 0.65} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
+            {/* Type indicator */}
+            <Line points={[-r * 0.4, 0, r * 0.4, 0]} stroke="#0f172a" strokeWidth={1.5} />
+            <Line points={[0, -r * 0.4, 0, r * 0.4]} stroke="#0f172a" strokeWidth={1.5} />
           </Group>
         );
       }
 
-      case 'custom_stage': {
-        const w = (el.customProps?.width as number) ?? 500;
-        const h = (el.customProps?.height as number) ?? 350;
-        const varanda = (el.customProps?.varanda as number) ?? 80;
-        const isLight = store.colorTheme === 'light';
+      case 'tripod': {
+        const s = 16;
         return (
           <Group>
-            {/* Stage Floor Background */}
-            <Rect
-              x={-w / 2} y={-h / 2} width={w} height={h}
-              fill={isLight ? '#f1f5f9' : '#1e293b'}
-              stroke={isSelected ? '#38bdf8' : '#64748b'}
-              strokeWidth={isSelected ? 3 : 2}
-              cornerRadius={2}
-            />
-            {/* Stage Floor Grid Hatch Lines */}
-            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'} strokeWidth={1} />
-            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'} strokeWidth={1} />
-
-            {/* Varanda / Proscênio extending forward */}
-            {varanda > 0 && (
-              <Rect
-                x={-w / 2} y={h / 2} width={w} height={varanda}
-                fill={isLight ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)'}
-                stroke={isSelected ? '#38bdf8' : '#475569'}
-                strokeWidth={1.5}
-                dash={[6, 4]}
-              />
-            )}
-            {/* Line at Proscenium (Boca de cena) */}
-            <Line points={[-w / 2, h / 2, w / 2, h / 2]} stroke="#38bdf8" strokeWidth={3} />
-
-            {/* Labels */}
-            <Text text="PALCO" x={-w / 2} y={-h / 4} width={w} align="center"
-              fontSize={16} fill={isLight ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.3)'} fontStyle="bold" fontFamily="Inter, sans-serif" />
-            <Text text="BOCA DE CENA" x={-w / 2} y={h / 2 - 14} width={w} align="center"
-              fontSize={10} fill="#0284c7" fontStyle="bold" fontFamily="JetBrains Mono, monospace" />
-            {varanda > 0 && (
-              <Text text="VARANDA / PROSCÊNIO" x={-w / 2} y={h / 2 + varanda / 2 - 6} width={w} align="center"
-                fontSize={9} fill={isLight ? '#475569' : 'rgba(255,255,255,0.4)'} fontFamily="JetBrains Mono, monospace" />
-            )}
+            <Line points={[0, 0, 0, -s]} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Line points={[0, 0, -s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Line points={[0, 0, s * 0.86, s * 0.5]} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Circle radius={4} fill="#0f172a" />
           </Group>
         );
       }
 
-      case 'hqi':
-      case 'linestra':
-      case 'pinspot':
+      case 'tower': {
+        const w = 24, h = 24;
+        return (
+          <Group>
+            <Rect x={-w / 2} y={-h / 2} width={w} height={h} fill="#ffffff" stroke={strokeColor} strokeWidth={strokeWidth} />
+            <Line points={[-w / 2, -h / 2, w / 2, h / 2]} stroke={strokeColor} strokeWidth={1} />
+            <Line points={[-w / 2, h / 2, w / 2, -h / 2]} stroke={strokeColor} strokeWidth={1} />
+            <Circle radius={4} fill="#0284c7" />
+          </Group>
+        );
+      }
+
       default: {
         const s = 14;
         return (
           <Group>
-            <Rect x={-s / 2} y={-s / 2} width={s} height={s}
-              fill={color} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} cornerRadius={2} />
+            <Rect
+              x={-s / 2} y={-s / 2} width={s} height={s}
+              fill={color} stroke={strokeColor} strokeWidth={strokeWidth} cornerRadius={2}
+            />
           </Group>
         );
       }
@@ -529,39 +376,51 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         onTransformEnd={handleTransformEnd}
       >
         {renderSymbol()}
-        {/* Label below fixture */}
-        {el.label && el.category !== 'architecture' && el.category !== 'rigging' && (
+
+        {/* Fixture Label */}
+        {el.label && el.category !== 'architecture' && el.type !== 'wall' && el.type !== 'custom_stage' && el.type !== 'stage_polygon' && (
           <Text
             text={el.customName || el.label}
-            x={-30} y={20}
-            fontSize={9}
-            fill={isSelected ? '#1d4ed8' : '#1e293b'}
+            x={-35} y={20}
+            fontSize={10}
+            fontStyle="bold"
+            fill={isSelected ? '#2563eb' : '#0f172a'}
             fontFamily="JetBrains Mono, monospace"
-            width={60}
+            width={70}
             align="center"
           />
         )}
-        {/* DMX address badge */}
+
+        {/* DMX Address Badge */}
         {el.dmx && el.dmx.address > 0 && (
-          <Text
-            text={`${el.dmx.universe}/${el.dmx.address}`}
-            x={-20} y={-28}
-            fontSize={8}
-            fill={el.dmx.hasConflict ? '#dc2626' : '#1d4ed8'}
-            fontFamily="JetBrains Mono, monospace"
-            width={40}
-            align="center"
-          />
+          <Group x={0} y={-26}>
+            <Rect
+              x={-18} y={-7} width={36} height={14}
+              fill="#dbeafe" stroke={el.dmx.hasConflict ? '#dc2626' : '#2563eb'}
+              strokeWidth={1} cornerRadius={3}
+            />
+            <Text
+              text={`${el.dmx.universe}/${el.dmx.address}`}
+              x={-18} y={-5}
+              fontSize={8}
+              fontStyle="bold"
+              fill={el.dmx.hasConflict ? '#dc2626' : '#1d4ed8'}
+              fontFamily="JetBrains Mono, monospace"
+              width={36}
+              align="center"
+            />
+          </Group>
         )}
       </Group>
 
+      {/* Transformer handle on selection */}
       {isSelected && !el.locked && (
         <Transformer
           ref={trRef}
           rotateEnabled={true}
-          anchorSize={7}
-          borderStroke="#3b82f6"
-          anchorStroke="#3b82f6"
+          anchorSize={8}
+          borderStroke="#2563eb"
+          anchorStroke="#2563eb"
           anchorFill="#ffffff"
           anchorCornerRadius={2}
           boundBoxFunc={(oldBox, newBox) => {
@@ -579,21 +438,8 @@ function FocusCone({ el }: { el: CanvasElement }) {
   if (!el.angle) return null;
   const halfAngle = (el.angle / 2) * (Math.PI / 180);
   const length = 120;
-  const gel = el.gelatin ?? 'NC';
-
-  // Map common gel codes to colors
-  const gelColors: Record<string, string> = {
-    'R-27': 'rgba(220,50,50,0.12)',
-    'R-80': 'rgba(20,40,200,0.12)',
-    'R-74': 'rgba(40,50,200,0.12)',
-    'R-68': 'rgba(106,180,245,0.12)',
-    'R-09': 'rgba(245,200,66,0.12)',
-    'R-312': 'rgba(245,245,66,0.12)',
-    'R-393': 'rgba(66,200,120,0.12)',
-    'NC': 'rgba(255,255,220,0.1)',
-  };
-  const coneColor = gelColors[gel] ?? 'rgba(255,255,200,0.1)';
-  const coneStroke = gelColors[gel]?.replace('0.12', '0.3') ?? 'rgba(255,255,200,0.25)';
+  const coneColor = 'rgba(239, 68, 68, 0.12)';
+  const coneStroke = 'rgba(239, 68, 68, 0.35)';
 
   const x1 = Math.sin(-halfAngle) * length;
   const y1 = Math.cos(-halfAngle) * length;
@@ -608,21 +454,22 @@ function FocusCone({ el }: { el: CanvasElement }) {
         fill={coneColor}
         stroke={coneStroke}
         strokeWidth={1}
-        opacity={0.9}
       />
     </Group>
   );
 }
 
-// ── MAIN CANVAS ───────────────────────────────────────────
+// ── MAIN LIGHTING CANVAS ─────────────────────────────────
 export default function LightingCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
-  const isSpaceRef = useRef(false);
+
   const isPanningRef = useRef(false);
+  const isSpaceRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [selectionBox, setSelectionBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
   const store = useEditorStore();
   const {
@@ -637,7 +484,7 @@ export default function LightingCanvas() {
     snapToGrid,
   } = store;
 
-  // Resize observer
+  // Handle Resize
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -649,14 +496,14 @@ export default function LightingCanvas() {
     return () => ro.disconnect();
   }, []);
 
-  // Expose stage ref globally for PNG/PDF export
+  // Global ref export
   useEffect(() => {
     if (stageRef.current) {
       window.__afinaStageRef = stageRef.current;
     }
   });
 
-  // Space-bar pan key tracking
+  // Key tracking
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
@@ -672,7 +519,6 @@ export default function LightingCanvas() {
     return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); };
   }, []);
 
-  // Cursor style
   const getCursor = () => {
     if (activeTool === 'pan' || isPanningRef.current) return 'grabbing';
     if (activeTool === 'insert_fixture') return 'crosshair';
@@ -681,84 +527,74 @@ export default function LightingCanvas() {
 
   const gridPx = (gridSize / 1000) * gridPixelsPerMeter;
 
-  // ── WHEEL ZOOM ──────────────────────────────────────────
+  // Zoom on Wheel
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const scaleBy = 1.1;
-    const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
+    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.9;
+    const newScale = Math.max(0.1, Math.min(10, stageScale * zoomFactor));
+
+    const stage = stageRef.current;
+    if (!stage) return;
+    const pointer = stage.getPointerPosition() || { x: dimensions.width / 2, y: dimensions.height / 2 };
+
+    const mousePointX = (pointer.x - stageX) / stageScale;
+    const mousePointY = (pointer.y - stageY) / stageScale;
+
+    const newX = pointer.x - mousePointX * newScale;
+    const newY = pointer.y - mousePointY * newScale;
+
+    setStageScale(newScale);
+    setStagePosition(newX, newY);
+  }, [stageScale, stageX, stageY, dimensions, setStageScale, setStagePosition]);
+
+  // Stage Mouse Down
+  const handleStageMouseDown = useCallback((e: any) => {
+    const stage = stageRef.current;
     if (!stage) return;
     const pointer = stage.getPointerPosition();
     if (!pointer) return;
 
-    const oldScale = stageScale;
-    const newScale = e.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
-    const clamped = Math.max(0.05, Math.min(8, newScale));
-
-    const mousePointTo = {
-      x: (pointer.x - stageX) / oldScale,
-      y: (pointer.y - stageY) / oldScale,
-    };
-
-    setStageScale(clamped);
-    setStagePosition(
-      pointer.x - mousePointTo.x * clamped,
-      pointer.y - mousePointTo.y * clamped
-    );
-  }, [stageScale, stageX, stageY, setStageScale, setStagePosition]);
-
-  // Selection box state for rubberband drag selection
-  const [selectionBox, setSelectionBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
-  const isSelectingRef = useRef(false);
-
-  // ── STAGE MOUSE DOWN ────────────────────────────────────
-  const handleStageMouseDown = useCallback((e: { target: { getStage: () => unknown; className?: string }; evt: MouseEvent }) => {
-    const isMiddle = e.evt.button === 1;
-    if (activeTool === 'pan' || isSpaceRef.current || isMiddle) {
+    if (e.evt.button === 1 || isSpaceRef.current || activeTool === 'pan') {
       isPanningRef.current = true;
-      lastPointerRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+      lastPointerRef.current = pointer;
       return;
     }
 
-    const clickedOnEmpty = e.target === (stageRef.current as { getStage: () => unknown })?.getStage?.() || e.target.className === 'Stage';
-    if (activeTool === 'select' && clickedOnEmpty) {
-      const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
-      const pointer = stage?.getPointerPosition();
-      if (pointer) {
-        const x = (pointer.x - stageX) / stageScale;
-        const y = (pointer.y - stageY) / stageScale;
-        isSelectingRef.current = true;
-        setSelectionBox({ x1: x, y1: y, x2: x, y2: y });
-        if (!e.evt.shiftKey) clearSelection();
-      }
+    const clickedOnEmpty = e.target === stage || e.target.className === 'Stage';
+    if (activeTool === 'select' && clickedOnEmpty && !e.evt.shiftKey) {
+      const worldX = (pointer.x - stageX) / stageScale;
+      const worldY = (pointer.y - stageY) / stageScale;
+      setSelectionBox({ x1: worldX, y1: worldY, x2: worldX, y2: worldY });
     }
-  }, [activeTool, stageX, stageY, stageScale, clearSelection]);
+  }, [activeTool, stageX, stageY, stageScale]);
 
-  // ── STAGE MOUSE MOVE ────────────────────────────────────
-  const handleStageMouseMove = useCallback((e: { evt: MouseEvent }) => {
+  // Mouse Move
+  const handleStageMouseMove = useCallback((e: any) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
     if (isPanningRef.current) {
-      const dx = e.evt.clientX - lastPointerRef.current.x;
-      const dy = e.evt.clientY - lastPointerRef.current.y;
-      lastPointerRef.current = { x: e.evt.clientX, y: e.evt.clientY };
+      const dx = pointer.x - lastPointerRef.current.x;
+      const dy = pointer.y - lastPointerRef.current.y;
       setStagePosition(stageX + dx, stageY + dy);
+      lastPointerRef.current = pointer;
       return;
     }
 
-    if (isSelectingRef.current) {
-      const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
-      const pointer = stage?.getPointerPosition();
-      if (pointer) {
-        const x = (pointer.x - stageX) / stageScale;
-        const y = (pointer.y - stageY) / stageScale;
-        setSelectionBox((prev) => (prev ? { ...prev, x2: x, y2: y } : null));
-      }
+    if (selectionBox) {
+      const worldX = (pointer.x - stageX) / stageScale;
+      const worldY = (pointer.y - stageY) / stageScale;
+      setSelectionBox((prev) => prev ? { ...prev, x2: worldX, y2: worldY } : null);
     }
-  }, [stageX, stageY, setStagePosition, stageScale]);
+  }, [stageX, stageY, stageScale, selectionBox, setStagePosition]);
 
-  // ── STAGE MOUSE UP ──────────────────────────────────────
+  // Mouse Up
   const handleStageMouseUp = useCallback(() => {
     isPanningRef.current = false;
-    if (isSelectingRef.current && selectionBox) {
-      isSelectingRef.current = false;
+
+    if (selectionBox) {
       const x1 = Math.min(selectionBox.x1, selectionBox.x2);
       const x2 = Math.max(selectionBox.x1, selectionBox.x2);
       const y1 = Math.min(selectionBox.y1, selectionBox.y2);
@@ -775,16 +611,15 @@ export default function LightingCanvas() {
     }
   }, [selectionBox, elements, selectElement]);
 
-  // ── STAGE CLICK (insert fixture or deselect) ──────────────
-  const handleStageClick = useCallback((e: { target: { getStage: () => unknown; className?: string }; evt: MouseEvent }) => {
-    const stage = (stageRef.current as { getPointerPosition: () => { x: number; y: number } | null });
+  // Click handler (Insert or deselect)
+  const handleStageClick = useCallback((e: any) => {
+    const stage = stageRef.current;
     if (!stage) return;
 
     if (activeTool === 'insert_fixture' && pendingFixtureType) {
       const pointer = stage.getPointerPosition();
       if (!pointer) return;
 
-      // Convert to canvas coordinates
       const x = snapToGrid((pointer.x - stageX) / stageScale);
       const y = snapToGrid((pointer.y - stageY) / stageScale);
 
@@ -819,9 +654,8 @@ export default function LightingCanvas() {
       return;
     }
 
-    // Deselect on background click
-    const clickedOnEmpty = e.target === (stageRef.current as { getStage: () => unknown })?.getStage?.() || e.target.className === 'Stage';
-    if (activeTool === 'select' && clickedOnEmpty) clearSelection();
+    const clickedOnEmpty = e.target === stage || e.target.className === 'Stage';
+    if (activeTool === 'select' && clickedOnEmpty && !e.evt.shiftKey) clearSelection();
   }, [activeTool, pendingFixtureType, stageX, stageY, stageScale, addElement, selectElement, clearSelection, snapToGrid]);
 
   // Magnetic Snap to Rigging Bars Helper
@@ -831,14 +665,14 @@ export default function LightingCanvas() {
     for (const bar of riggingBars) {
       const barW = (bar.customProps?.width as number) ?? 200;
       if (Math.abs(y - bar.y) < 30 && x >= bar.x - 20 && x <= bar.x + barW + 20) {
-        return { x, y: bar.y }; // Snap right onto bar center line!
+        return { x, y: bar.y };
       }
     }
     return { x, y };
   }, [elements]);
 
-  // ── DRAG END (update position) ───────────────────────────
-  const handleFixtureDragEnd = useCallback((id: string, e: { target: { x: () => number; y: () => number } }) => {
+  // Drag End
+  const handleFixtureDragEnd = useCallback((id: string, e: any) => {
     const rawX = snapToGrid(e.target.x());
     const rawY = snapToGrid(e.target.y());
     const el = elements.find((item) => item.id === id);
@@ -851,7 +685,7 @@ export default function LightingCanvas() {
     store.updateElement(id, { x, y });
   }, [store, snapToGrid, snapToRiggingBar, elements]);
 
-  // ── DRAG-AND-DROP FROM PANEL ───────────────────────────
+  // Drag and Drop from Asset Panel
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const type = e.dataTransfer.getData('fixtureType') as FixtureType;
@@ -869,7 +703,7 @@ export default function LightingCanvas() {
     const isRigging = def.category === 'rigging' || type === 'lightingbar' || type.startsWith('truss');
     const { x, y } = snapToRiggingBar(rawX, rawY, isRigging);
 
-    addElement({
+    const id = addElement({
       type,
       category: def.category,
       layerId: def.defaultLayerId,
@@ -877,7 +711,7 @@ export default function LightingCanvas() {
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
-      label: '',
+      label: def.label,
       color: def.colorHex,
       gelatin: 'NC',
       wattage: def.defaultWattage,
@@ -893,9 +727,10 @@ export default function LightingCanvas() {
       } : undefined,
       customProps: type === 'lightingbar' ? { width: 300, height: 8 } : {},
     });
-  }, [addElement, stageX, stageY, stageScale, snapToGrid, snapToRiggingBar]);
+    selectElement(id);
+  }, [addElement, selectElement, stageX, stageY, stageScale, snapToGrid, snapToRiggingBar]);
 
-  // Build activeLayerMap lookup table
+  // Active layers lookup
   const activeLayerMap = (layers || []).reduce<Record<string, { visible: boolean; locked: boolean }>>((acc, l) => {
     acc[l.id] = { visible: l.visible, locked: l.locked };
     return acc;
@@ -906,11 +741,9 @@ export default function LightingCanvas() {
     return activeLayerMap[layerId].visible;
   };
 
-  // All visible elements — single unified list, no complex layer splits
+  // Unified element list
   const visibleElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId));
   const focusEls = showFocusCoverage ? visibleElements.filter((el) => (el.angle ?? 0) > 0) : [];
-
-  const [minimapVisible, setMinimapVisible] = useState(true);
 
   return (
     <div
@@ -923,47 +756,47 @@ export default function LightingCanvas() {
     >
       {/* Tool hint */}
       {activeTool === 'insert_fixture' && pendingFixtureType && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 bg-afina-600/90 text-white text-xs rounded-full backdrop-blur-sm border border-afina-400/30 pointer-events-none">
-          Clique no canvas para inserir · ESC para cancelar
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-afina-600 text-white text-xs font-semibold rounded-full shadow-lg border border-afina-400 pointer-events-none animate-fade-in">
+          Clique no canvas para posicionar · ESC para cancelar
         </div>
       )}
 
-      {/* Zoom indicator — prominent */}
+      {/* Prominent Zoom Controls */}
       <div
         style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 20 }}
-        className="flex items-center gap-2"
+        className="flex items-center gap-1.5 p-1 bg-white rounded-xl shadow-lg border border-slate-300"
       >
         <button
-          onClick={() => { store.setStageScale(stageScale / 1.2); }}
-          className="w-7 h-7 flex items-center justify-center rounded bg-editor-raised border border-editor-border text-white/60 hover:text-white hover:bg-editor-hover text-base font-bold transition-colors"
-        >−</button>
-        <div className="font-mono text-xs font-bold text-afina-300 bg-editor-raised px-2.5 py-1 rounded border border-editor-border min-w-[52px] text-center">
+          onClick={() => store.setStageScale(stageScale / 1.2)}
+          className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition-colors"
+          title="Diminuir Zoom"
+        >
+          −
+        </button>
+        <div className="font-mono text-xs font-bold text-slate-800 px-2 min-w-[50px] text-center">
           {Math.round(stageScale * 100)}%
         </div>
         <button
-          onClick={() => { store.setStageScale(stageScale * 1.2); }}
-          className="w-7 h-7 flex items-center justify-center rounded bg-editor-raised border border-editor-border text-white/60 hover:text-white hover:bg-editor-hover text-base font-bold transition-colors"
-        >+</button>
+          onClick={() => store.setStageScale(stageScale * 1.2)}
+          className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition-colors"
+          title="Aumentar Zoom"
+        >
+          +
+        </button>
         <button
           onClick={() => store.resetView()}
-          className="px-2 h-7 text-[10px] rounded bg-editor-raised border border-editor-border text-white/40 hover:text-white hover:bg-editor-hover transition-colors"
-        >Reset</button>
+          className="px-2 h-7 text-[10px] font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+          title="Resetar Zoom e Centralizar"
+        >
+          Reset
+        </button>
       </div>
 
-      {/* Minimap toggle button */}
-      <button
-        onClick={() => setMinimapVisible((v) => !v)}
-        style={{ position: 'absolute', bottom: minimapVisible ? 148 : 12, left: 12, zIndex: 25 }}
-        className="px-2 py-1 text-[10px] font-mono rounded bg-editor-raised border border-editor-border text-afina-400 hover:text-white hover:bg-editor-hover transition-all"
-      >
-        {minimapVisible ? '⊠ Radar' : '⊞ Radar'}
-      </button>
-
       {/* Minimap Radar Navigator */}
-      {minimapVisible && <CanvasMinimap />}
+      <CanvasMinimap />
 
       <Stage
-        ref={stageRef as any}
+        ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
         x={stageX}
@@ -989,20 +822,21 @@ export default function LightingCanvas() {
           )}
         </Layer>
 
-        {/* ── ELEMENTS LAYER — all elements in ONE layer ─── */}
+        {/* ── ELEMENTS LAYER ─── */}
         <Layer>
           {/* Focus cones behind fixtures */}
           {focusEls.map((el) => (
             <FocusCone key={`cone-${el.id}`} el={el} />
           ))}
+
+          {/* Render all visible elements */}
           {visibleElements.map((el) => (
             <FixtureSymbol
               key={el.id}
               el={el}
               isSelected={selectedIds.includes(el.id)}
-              onClick={(e: unknown) => {
-                const evt = e as { evt: MouseEvent };
-                selectElement(el.id, evt?.evt?.shiftKey ?? false);
+              onClick={(e: any) => {
+                selectElement(el.id, e?.evt?.shiftKey ?? false);
               }}
               onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
             />
@@ -1017,9 +851,9 @@ export default function LightingCanvas() {
               y={Math.min(selectionBox.y1, selectionBox.y2)}
               width={Math.abs(selectionBox.x2 - selectionBox.x1)}
               height={Math.abs(selectionBox.y2 - selectionBox.y1)}
-              fill="rgba(59, 130, 246, 0.1)"
-              stroke="#3b82f6"
-              strokeWidth={1}
+              fill="rgba(37, 99, 235, 0.08)"
+              stroke="#2563eb"
+              strokeWidth={1.5}
               dash={[4, 4]}
             />
           </Layer>

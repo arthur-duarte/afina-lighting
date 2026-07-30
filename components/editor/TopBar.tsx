@@ -156,16 +156,16 @@ export function TopBar() {
         <div className="w-7 h-7 rounded-md bg-afina-500 flex items-center justify-center">
           <Zap size={14} className="text-white" strokeWidth={2.5} />
         </div>
-        <span className="font-bold text-sm tracking-tight text-white">
-          afina<span className="text-afina-400">.</span>
+        <span className="font-bold text-sm tracking-tight text-slate-900">
+          afina<span className="text-afina-500">.</span>
         </span>
-        <span className="text-white/20 text-xs font-mono">v2.0</span>
+        <span className="text-slate-400 text-xs font-mono">v2.0</span>
       </div>
 
       {/* Quick New Map Button */}
       <button
         onClick={() => setShowNewMapModal(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1 bg-afina-600/30 hover:bg-afina-600 text-afina-300 hover:text-white border border-afina-500/40 text-xs rounded-lg font-medium transition-all mr-2"
+        className="flex items-center gap-1.5 px-3 py-1 bg-afina-500 hover:bg-afina-600 text-white text-xs rounded-lg font-bold transition-all shadow-sm mr-2"
         title="Criar Novo Mapa de Luz (Setup Wizard)"
       >
         <SparklesIcon size={13} />
