@@ -975,6 +975,11 @@ export default function LightingCanvas() {
               el={el}
               isSelected={selectedIds.includes(el.id)}
               onClick={() => selectElement(el.id)}
+              onDragEnd={(e) => handleFixtureDragEnd(el.id, e)}
+            />
+          ))}
+        </Layer>
+
         {/* ── SELECTION MARQUEE BOX LAYER ─── */}
         {selectionBox && (
           <Layer listening={false}>
