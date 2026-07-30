@@ -604,7 +604,11 @@ export default function LightingCanvas() {
     const rawX = snapToGrid(e.target.x());
     const rawY = snapToGrid(e.target.y());
     const el = elements.find((item) => item.id === id);
-    const isRigging = el?.category === 'rigging' || el?.type === 'lightingbar' || el?.type?.startsWith('truss') ?? false;
+    const isRigging = Boolean(
+      el?.category === 'rigging' ||
+      el?.type === 'lightingbar' ||
+      el?.type?.startsWith('truss')
+    );
     const { x, y } = snapToRiggingBar(rawX, rawY, isRigging);
     store.updateElement(id, { x, y });
   }, [store, snapToGrid, snapToRiggingBar, elements]);
