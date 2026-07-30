@@ -345,7 +345,7 @@ export function AssetPanel() {
                     const id = storeState.addElement({
                       type: 'text',
                       category: 'annotation',
-                      layerId: 'layer_annotation',
+                      layerId: 'layer_annotations',
                       x: 0,
                       y: 0,
                       rotation: 0,
