@@ -160,6 +160,17 @@ function SingleInspector({ el }: { el: CanvasElement }) {
             placeholder="ex: Foco Principal Ator A"
           />
         </FieldRow>
+        <FieldRow label="Cor / Símbolo">
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={el.color || '#facc15'}
+              onChange={(e) => update('color', e.target.value)}
+              className="w-7 h-6 rounded border border-white/20 bg-transparent cursor-pointer"
+            />
+            <span className="font-mono text-xs text-white/60">{el.color || '#facc15'}</span>
+          </div>
+        </FieldRow>
         <FieldRow label="Canal">
           <input
             type="number"

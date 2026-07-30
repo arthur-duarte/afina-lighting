@@ -2,6 +2,7 @@
 
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { getFixtureDef, GELATIN_PRESETS } from '@/lib/fixtures/fixtureLibrary';
+import { SymbolIcon } from './SymbolIcon';
 import type { FixtureType } from '@/lib/types';
 
 interface LegendEntry {
@@ -107,7 +108,7 @@ export function DynamicLegend() {
                 style={{ backgroundColor: entry.colorHex }}
               />
               {/* Icon */}
-              <span className="text-sm leading-none">{entry.icon}</span>
+              <SymbolIcon type={entry.type} colorHex={entry.colorHex} size={14} />
               {/* Label */}
               <span className="text-[10px] text-white/70 flex-1 leading-tight">
                 {entry.description}

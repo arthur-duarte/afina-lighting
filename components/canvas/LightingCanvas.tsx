@@ -493,11 +493,11 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         {el.label && el.category !== 'architecture' && el.category !== 'rigging' && (
           <Text
             text={el.customName || el.label}
-            x={-25} y={20}
+            x={-30} y={20}
             fontSize={9}
-            fill={isSelected ? '#93c5fd' : 'rgba(255,255,255,0.7)'}
+            fill={isSelected ? (store.colorTheme === 'light' ? '#1d4ed8' : '#93c5fd') : (store.colorTheme === 'light' ? '#0f172a' : 'rgba(255,255,255,0.85)')}
             fontFamily="JetBrains Mono, monospace"
-            width={50}
+            width={60}
             align="center"
           />
         )}
@@ -505,10 +505,12 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         {el.dmx && el.dmx.address > 0 && (
           <Text
             text={`${el.dmx.universe}/${el.dmx.address}`}
-            x={-15} y={-28}
+            x={-20} y={-28}
             fontSize={8}
-            fill={el.dmx.hasConflict ? '#ef4444' : 'rgba(96,165,250,0.7)'}
+            fill={el.dmx.hasConflict ? '#ef4444' : (store.colorTheme === 'light' ? '#2563eb' : 'rgba(96,165,250,0.85)')}
             fontFamily="JetBrains Mono, monospace"
+            width={40}
+            align="center"
           />
         )}
       </Group>

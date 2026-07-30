@@ -3,13 +3,21 @@
 import { useState } from 'react';
 import { useEditorStore } from '@/lib/store/useEditorStore';
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
+import { SymbolIcon } from './SymbolIcon';
 import {
   SparklesIcon, FileTextIcon, UserIcon, MapPinIcon,
   CalendarIcon, Grid3x3Icon, XIcon, CheckIcon, ZapIcon,
 } from 'lucide-react';
 
 export function NewMapModal() {
-  const { showNewMapModal, setShowNewMapModal, clearCanvas, updateSeal, addElement, selectElement } = useEditorStore();
+  const { elements, showNewMapModal, setShowNewMapModal, clearCanvas, updateSeal, addElement, selectElement } = useEditorStore();
+
+  useEffect(() => {
+    // If canvas is empty on initial load, auto-open setup wizard
+    if (elements.length === 0) {
+      setShowNewMapModal(true);
+    }
+  }, []);
 
   const [show, setShow] = useState('Novo Espetáculo');
   const [designer, setDesigner] = useState('Arthur Duarte');
@@ -192,7 +200,9 @@ export function NewMapModal() {
                         : 'bg-[#181822] border-[#2a2a38] text-white/60 hover:text-white hover:border-[#3a3a4c]'
                     }`}
                   >
-                    <span className="text-2xl">{preset.icon}</span>
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 bg-afina-950/40 rounded-lg border border-afina-500/30">
+                      <SymbolIcon type={preset.icon} colorHex="#38bdf8" size={22} />
+                    </div>
                     <div>
                       <div className="text-xs font-bold text-white">{preset.name}</div>
                       <div className="text-[10px] text-white/40">{preset.description}</div>

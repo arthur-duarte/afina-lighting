@@ -6,6 +6,7 @@ import { CATEGORY_LABELS, getFixturesByCategory, getFixtureDef } from '@/lib/fix
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { PatchPanel } from './PatchPanel';
 import { DynamicLegend } from './DynamicLegend';
+import { SymbolIcon } from './SymbolIcon';
 import type { FixtureType } from '@/lib/types';
 import {
   ChevronDownIcon, ChevronRightIcon,
@@ -45,16 +46,19 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
 
   const handleClick = () => {
     const def = getFixtureDef(type);
+    const centerX = Math.round((-store.stageX + 350) / (store.stageScale || 1));
+    const centerY = Math.round((-store.stageY + 250) / (store.stageScale || 1));
+
     const id = store.addElement({
       type,
       category: def?.category ?? 'conventional',
       layerId: def?.defaultLayerId ?? 'layer_lighting',
-      x: 350,
-      y: 250,
+      x: centerX,
+      y: centerY,
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
-      label: def?.label ?? '',
+      label: def?.label ?? label,
       color: def?.colorHex ?? '#facc15',
       gelatin: 'NC',
       wattage: def?.defaultWattage ?? 1000,
@@ -66,7 +70,6 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
       customProps: type === 'lightingbar' ? { width: 300, height: 8 } : type.startsWith('truss') ? { width: 200, height: 12 } : {},
     });
     store.selectElement(id);
-    store.setActiveTool('insert_fixture', type);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -83,10 +86,10 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
       title={description}
     >
       <div
-        className="fixture-icon text-sm"
-        style={{ borderColor: `${colorHex}44`, color: colorHex }}
+        className="fixture-icon flex items-center justify-center p-1"
+        style={{ borderColor: `${colorHex}44` }}
       >
-        {icon}
+        <SymbolIcon type={type} colorHex={colorHex} size={18} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-white/80 truncate">{label}</div>
@@ -111,7 +114,9 @@ function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
                  text-left border border-transparent hover:border-editor-border hover:bg-editor-hover
                  transition-all duration-150"
     >
-      <span className="text-lg leading-none">{preset.icon}</span>
+      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+        <SymbolIcon type={preset.icon} colorHex="#38bdf8" size={20} />
+      </div>
       <div className="min-w-0">
         <div className="text-xs font-medium text-white/80 truncate">{preset.name}</div>
         <div className="text-[10px] text-white/35 truncate">{preset.description}</div>

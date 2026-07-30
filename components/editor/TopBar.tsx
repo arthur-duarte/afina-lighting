@@ -17,7 +17,7 @@ import {
   ZapIcon, FileIcon, UndoIcon, RedoIcon, DownloadIcon,
   SaveIcon, LayersIcon, FolderOpenIcon, SunIcon, MoonIcon,
   EyeIcon, AlertTriangleIcon, Zap, ChevronDownIcon,
-  UploadIcon, CloudIcon, CheckCircle2Icon,
+  UploadIcon, CloudIcon, CheckCircle2Icon, SparklesIcon,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -152,7 +152,7 @@ export function TopBar() {
       />
 
       {/* Logo */}
-      <div className="flex items-center gap-2 mr-3 pr-3 border-r border-editor-border">
+      <div className="flex items-center gap-2 mr-2 pr-3 border-r border-editor-border">
         <div className="w-7 h-7 rounded-md bg-afina-500 flex items-center justify-center">
           <Zap size={14} className="text-white" strokeWidth={2.5} />
         </div>
@@ -161,6 +161,16 @@ export function TopBar() {
         </span>
         <span className="text-white/20 text-xs font-mono">v2.0</span>
       </div>
+
+      {/* Quick New Map Button */}
+      <button
+        onClick={() => setShowNewMapModal(true)}
+        className="flex items-center gap-1.5 px-2.5 py-1 bg-afina-600/30 hover:bg-afina-600 text-afina-300 hover:text-white border border-afina-500/40 text-xs rounded-lg font-medium transition-all mr-2"
+        title="Criar Novo Mapa de Luz (Setup Wizard)"
+      >
+        <SparklesIcon size={13} />
+        + Novo Mapa
+      </button>
 
       {/* File Menu */}
       <div className="relative">

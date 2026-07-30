@@ -65,50 +65,85 @@
    LIGHT MODE (Modo Claro de Impressão e Montagem Diurna)
    ============================================================ */
 .light-mode body {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
 .light-mode .editor-layout {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
 }
 
 .light-mode .editor-topbar,
 .light-mode .editor-assets,
 .light-mode .editor-inspector,
-.light-mode .editor-seal {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-.light-mode .editor-topbar span,
-.light-mode .editor-assets span,
-.light-mode .editor-inspector span,
-.light-mode .editor-seal span,
-.light-mode .panel-label {
-  color: #334155 !important;
-}
-
-.light-mode .canvas-wrapper {
-  --canvas-bg: #f8fafc;
-  background-color: #f8fafc !important;
-  background-image: radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1px) !important;
-}
-
-.light-mode .input-field,
-.light-mode .select-field {
+.light-mode .editor-seal,
+.light-mode aside,
+.light-mode header,
+.light-mode footer,
+.light-mode .bg-editor-surface,
+.light-mode .bg-editor-raised,
+.light-mode .bg-\[\#18181f\],
+.light-mode .bg-\[\#131318\],
+.light-mode .bg-\[\#14141a\],
+.light-mode .bg-\[\#181822\] {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-.light-mode .icon-btn {
+/* Contrast text overrides */
+.light-mode h1, .light-mode h2, .light-mode h3, .light-mode h4,
+.light-mode p, .light-mode span, .light-mode div, .light-mode label,
+.light-mode button, .light-mode input, .light-mode select,
+.light-mode .panel-label, .light-mode .text-white,
+.light-mode .text-white\/90, .light-mode .text-white\/80,
+.light-mode .text-white\/70, .light-mode .text-white\/60,
+.light-mode .text-white\/50, .light-mode .text-white\/40,
+.light-mode .text-white\/35, .light-mode .text-white\/30,
+.light-mode .text-white\/20 {
+  color: #0f172a !important;
+}
+
+.light-mode .panel-label,
+.light-mode .text-white\/50,
+.light-mode .text-white\/40 {
   color: #475569 !important;
+}
+
+.light-mode .text-white\/35,
+.light-mode .text-white\/30,
+.light-mode .text-white\/20 {
+  color: #64748b !important;
+}
+
+.light-mode .canvas-wrapper {
+  --canvas-bg: #ffffff;
+  background-color: #ffffff !important;
+  background-image: radial-gradient(rgba(0,0,0,0.18) 1px, transparent 1px) !important;
+}
+
+.light-mode .input-field,
+.light-mode .select-field {
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+.light-mode .input-field::placeholder {
+  color: #64748b !important;
+}
+
+.light-mode .icon-btn {
+  color: #334155 !important;
 }
 .light-mode .icon-btn:hover {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
+}
+
+.light-mode .fixture-card:hover,
+.light-mode .menu-item:hover,
+.light-mode .layer-item:hover {
+  background-color: #f1f5f9 !important;
 }
 
 /* ============================================================
