@@ -204,6 +204,7 @@ export interface EditorState {
   colorTheme: 'dark' | 'light' | 'backstage';
   backstageMode: boolean;
   showFocusCoverage: boolean;
+  showFixtureLabels: boolean;
   showNewMapModal: boolean;
   layerPanelOpen: boolean;
   selectedTab: 'library' | 'layers' | 'patch' | 'legend';

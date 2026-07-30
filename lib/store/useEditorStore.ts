@@ -110,6 +110,7 @@ const initialState: EditorState = {
   colorTheme: 'light',
   backstageMode: false,
   showFocusCoverage: false,
+  showFixtureLabels: true,
   showNewMapModal: false,
   layerPanelOpen: false,
   selectedTab: 'library',
@@ -159,6 +160,7 @@ interface EditorStore extends EditorState {
   setColorTheme: (theme: 'dark' | 'light' | 'backstage') => void;
   toggleBackstageMode: () => void;
   toggleFocusCoverage: () => void;
+  toggleFixtureLabels: () => void;
   setShowNewMapModal: (show: boolean) => void;
   toggleLayerPanel: () => void;
   setSelectedTab: (tab: 'library' | 'layers' | 'patch' | 'legend') => void;
@@ -372,6 +374,9 @@ export const useEditorStore = create<EditorStore>()(
 
       toggleFocusCoverage: () =>
         set((s) => ({ showFocusCoverage: !s.showFocusCoverage })),
+
+      toggleFixtureLabels: () =>
+        set((s) => ({ showFixtureLabels: !s.showFixtureLabels })),
 
       setShowNewMapModal: (show) => set({ showNewMapModal: show }),
 

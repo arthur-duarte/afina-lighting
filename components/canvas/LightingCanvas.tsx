@@ -13,7 +13,6 @@ declare global {
 }
 
 // ── GRID COMPONENT ─────────────────────────────────────────
-// Renders in Konva world-space coordinates
 function CanvasGrid({
   stageX, stageY, stageScale, canvasW, canvasH, gridPx,
 }: {
@@ -95,7 +94,6 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
   const color = el.color || def?.colorHex || '#ef4732';
   const hasConflict = el.dmx?.hasConflict;
 
-  // High contrast stroke for light background
   const strokeColor = hasConflict ? '#dc2626' : (isSelected ? '#2563eb' : '#0f172a');
   const strokeWidth = isSelected ? 2.5 : 1.5;
 
@@ -308,14 +306,11 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         const r = 16;
         return (
           <Group>
-            {/* Outer base box */}
             <Rect
               x={-r * 0.85} y={-r * 0.85} width={r * 1.7} height={r * 1.7}
               fill="#ffffff" stroke={strokeColor} strokeWidth={1.5} cornerRadius={4}
             />
-            {/* Head circle */}
             <Circle radius={r * 0.65} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
-            {/* Type indicator */}
             <Line points={[-r * 0.4, 0, r * 0.4, 0]} stroke="#0f172a" strokeWidth={1.5} />
             <Line points={[0, -r * 0.4, 0, r * 0.4]} stroke="#0f172a" strokeWidth={1.5} />
           </Group>
@@ -360,6 +355,8 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
     }
   };
 
+  const showTextLabel = el.label && (store.showFixtureLabels || isSelected) && el.category !== 'architecture' && el.type !== 'wall' && el.type !== 'custom_stage' && el.type !== 'stage_polygon';
+
   return (
     <>
       <Group
@@ -377,8 +374,8 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
       >
         {renderSymbol()}
 
-        {/* Fixture Label */}
-        {el.label && el.category !== 'architecture' && el.type !== 'wall' && el.type !== 'custom_stage' && el.type !== 'stage_polygon' && (
+        {/* Fixture Name Label (Togglable) */}
+        {showTextLabel && (
           <Text
             text={el.customName || el.label}
             x={-35} y={20}
@@ -470,6 +467,7 @@ export default function LightingCanvas() {
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [selectionBox, setSelectionBox] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [showLegendOverlay, setShowLegendOverlay] = useState(true);
 
   const store = useEditorStore();
   const {
@@ -479,7 +477,7 @@ export default function LightingCanvas() {
     activeTool, pendingFixtureType,
     elements, selectedIds,
     layers,
-    showFocusCoverage,
+    showFocusCoverage, showFixtureLabels, toggleFixtureLabels,
     selectElement, clearSelection, addElement,
     snapToGrid,
   } = store;
@@ -658,7 +656,7 @@ export default function LightingCanvas() {
     if (activeTool === 'select' && clickedOnEmpty && !e.evt.shiftKey) clearSelection();
   }, [activeTool, pendingFixtureType, stageX, stageY, stageScale, addElement, selectElement, clearSelection, snapToGrid]);
 
-  // Magnetic Snap to Rigging Bars Helper
+  // Magnetic Snap Helper
   const snapToRiggingBar = useCallback((x: number, y: number, isRigging = false): { x: number; y: number } => {
     if (isRigging) return { x, y };
     const riggingBars = elements.filter((el) => el.category === 'rigging' || el.type === 'lightingbar' || el.type.startsWith('truss'));
@@ -685,7 +683,7 @@ export default function LightingCanvas() {
     store.updateElement(id, { x, y });
   }, [store, snapToGrid, snapToRiggingBar, elements]);
 
-  // Drag and Drop from Asset Panel
+  // Drag and Drop
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const type = e.dataTransfer.getData('fixtureType') as FixtureType;
@@ -741,9 +739,26 @@ export default function LightingCanvas() {
     return activeLayerMap[layerId].visible;
   };
 
-  // Unified element list
   const visibleElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId));
   const focusEls = showFocusCoverage ? visibleElements.filter((el) => (el.angle ?? 0) > 0) : [];
+
+  // Fixture count summary for legend card
+  const fixtureSummary: { label: string; color: string; count: number }[] = [];
+  const countMap = new Map<string, { label: string; color: string; count: number }>();
+  elements
+    .filter((el) => el.category !== 'architecture' && el.category !== 'annotation')
+    .forEach((el) => {
+      const def = getFixtureDef(el.type);
+      const label = def?.description || el.type;
+      const color = el.color || def?.colorHex || '#ef4732';
+      const existing = countMap.get(el.type);
+      if (existing) {
+        existing.count++;
+      } else {
+        countMap.set(el.type, { label, color, count: 1 });
+      }
+    });
+  countMap.forEach((val) => fixtureSummary.push(val));
 
   return (
     <div
@@ -760,6 +775,56 @@ export default function LightingCanvas() {
           Clique no canvas para posicionar · ESC para cancelar
         </div>
       )}
+
+      {/* Screen Floating Legend & Label Controls */}
+      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 20 }} className="flex flex-col items-end gap-2">
+        <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl shadow-lg border border-slate-300">
+          <button
+            onClick={toggleFixtureLabels}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+              showFixtureLabels ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+            title="Exibir/Ocultar Rótulos com Nomes dos Equipamentos"
+          >
+            🏷️ Nomes {showFixtureLabels ? 'ON' : 'OFF'}
+          </button>
+          <button
+            onClick={() => setShowLegendOverlay(!showLegendOverlay)}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+              showLegendOverlay ? 'bg-afina-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+            title="Exibir/Ocultar Legenda no Canvas"
+          >
+            📋 Legenda
+          </button>
+        </div>
+
+        {/* Interactive Floating Equipment Legend Card */}
+        {showLegendOverlay && fixtureSummary.length > 0 && (
+          <div className="w-64 p-3 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200 animate-scale-in">
+            <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200">
+              <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Legenda de Equipamentos</span>
+              <button
+                onClick={() => setShowLegendOverlay(false)}
+                className="text-slate-400 hover:text-slate-700 text-xs px-1"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {fixtureSummary.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between text-xs py-0.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-3 h-3 rounded-sm flex-shrink-0 border border-slate-400" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-800 font-medium truncate">{item.label}</span>
+                  </div>
+                  <span className="font-mono font-bold text-afina-600 text-xs ml-2">×{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Prominent Zoom Controls */}
       <div

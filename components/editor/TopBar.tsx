@@ -90,7 +90,8 @@ export function TopBar() {
     if (!stage) { alert('Canvas não disponível. Tente novamente.'); return; }
     exportStageToPNG(
       stage as Parameters<typeof exportStageToPNG>[0],
-      `${(technicalSeal.show || 'afina').replace(/\s+/g, '_')}_mapa.png`
+      elements,
+      technicalSeal
     );
     closeAll();
   };

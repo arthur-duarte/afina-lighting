@@ -1,5 +1,6 @@
 // ============================================================
-// AFINA v2.0 — PDF Export (jsPDF, multipágina A3/A4)
+// AFINA v2.0 — High-Resolution Technical PDF Export (jsPDF A3/A4)
+// Pure White Page Background, Header (Show Name & Date), Equipment Legend & Seal
 // ============================================================
 
 import { jsPDF } from 'jspdf';
@@ -11,16 +12,17 @@ interface KonvaStage {
   toDataURL: (config: { mimeType: string; quality: number; pixelRatio: number }) => string;
 }
 
-// Color palette
+// Light theme color palette for technical printing
 const COLORS = {
-  bg: [15, 15, 20] as [number, number, number],
-  surface: [22, 22, 30] as [number, number, number],
-  border: [45, 45, 60] as [number, number, number],
-  accent: [139, 92, 246] as [number, number, number],
-  yellow: [250, 204, 21] as [number, number, number],
-  text: [240, 240, 250] as [number, number, number],
-  muted: [120, 120, 140] as [number, number, number],
-  red: [239, 68, 68] as [number, number, number],
+  bg: [255, 255, 255] as [number, number, number],        // Pure white
+  surface: [248, 250, 252] as [number, number, number],   // Light Slate 50
+  border: [203, 213, 225] as [number, number, number],    // Slate 300
+  darkBorder: [15, 23, 42] as [number, number, number],   // Slate 900
+  accent: [239, 71, 50] as [number, number, number],      // Afina Red
+  blue: [2, 132, 199] as [number, number, number],        // Sky Blue
+  text: [15, 23, 42] as [number, number, number],         // Dark Charcoal
+  muted: [100, 116, 139] as [number, number, number],     // Slate 500
+  red: [220, 38, 38] as [number, number, number],         // Conflict Red
 };
 
 export async function exportTechnicalPDF(
@@ -38,189 +40,226 @@ export async function exportTechnicalPDF(
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
 
+  const showName = (seal.show || 'NOVO ESPETÁCULO').toUpperCase();
+  const dateStr = seal.date || new Date().toLocaleDateString('pt-BR');
+
   // ── PAGE 1: LIGHTING MAP ──────────────────────────────────
 
-  // Background
+  // Pure White Background
   doc.setFillColor(...COLORS.bg);
   doc.rect(0, 0, W, H, 'F');
 
   // Header band
   doc.setFillColor(...COLORS.surface);
-  doc.rect(0, 0, W, 16, 'F');
-  doc.setDrawColor(...COLORS.accent);
-  doc.setLineWidth(0.5);
-  doc.line(0, 16, W, 16);
+  doc.rect(0, 0, W, 18, 'F');
+  doc.setDrawColor(...COLORS.darkBorder);
+  doc.setLineWidth(0.6);
+  doc.line(0, 18, W, 18);
 
-  // Title
+  // Title Logo
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.setTextColor(...COLORS.text);
-  doc.text('AFINA', 8, 10.5);
+  doc.setTextColor(...COLORS.accent);
+  doc.text('AFINA', 8, 11);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.muted);
-  doc.text('Mapa de Luz — Design de Iluminação Cênica', 28, 10.5);
+  doc.text('PLANTA E MAPA DE ILUMINAÇÃO CÊNICA', 28, 11);
 
-  // Show name (top right)
+  // Show name & Date (Top Right)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(...COLORS.text);
-  doc.text(seal.show, W - 8, 10.5, { align: 'right' });
+  doc.text(showName, W - 8, 10, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.blue);
+  doc.text(`DATA: ${dateStr}   ·   VERSÃO: ${seal.version || 'v1.0'}`, W - 8, 15, { align: 'right' });
 
   // Canvas snapshot (Lighting Plot)
-  const imgData = stage.toDataURL({ mimeType: 'image/png', quality: 0.98, pixelRatio: 3 });
+  const imgData = stage.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 3 });
   const mapMargin = 8;
-  const mapTop = 20;
+  const mapTop = 22;
   const sealH = 22;
+  const legendW = 65; // Side column for Legend
   const mapH = H - mapTop - sealH - 4;
-  const mapW = W - mapMargin * 2;
+  const mapW = W - mapMargin * 2 - legendW - 4;
 
+  // Draw plot image
   doc.addImage(imgData, 'PNG', mapMargin, mapTop, mapW, mapH, undefined, 'FAST');
 
   // Map border
-  doc.setDrawColor(...COLORS.border);
-  doc.setLineWidth(0.3);
+  doc.setDrawColor(...COLORS.darkBorder);
+  doc.setLineWidth(0.4);
   doc.rect(mapMargin, mapTop, mapW, mapH);
 
-  // ── TECHNICAL SEAL (bottom bar) ──────────────────────────
+  // ── EQUIPMENT LEGEND (RIGHT COLUMN OUTSIDE MAP) ──────────
+  const legendX = mapMargin + mapW + 4;
+  doc.setFillColor(...COLORS.surface);
+  doc.rect(legendX, mapTop, legendW, mapH, 'F');
+  doc.setDrawColor(...COLORS.darkBorder);
+  doc.setLineWidth(0.4);
+  doc.rect(legendX, mapTop, legendW, mapH);
+
+  let legendY = mapTop + 6;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.accent);
+  doc.text('LEGENDA DE SÍMBOLOS', legendX + 4, legendY);
+  legendY += 4;
+
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.4);
+  doc.line(legendX + 4, legendY, legendX + legendW - 4, legendY);
+  legendY += 5;
+
+  // Count fixtures
+  const fixtureCount: Record<string, number> = {};
+  elements
+    .filter((el) => el.category !== 'architecture' && el.category !== 'annotation')
+    .forEach((el) => {
+      fixtureCount[el.type] = (fixtureCount[el.type] ?? 0) + 1;
+    });
+
+  Object.entries(fixtureCount).forEach(([type, count]) => {
+    const def = getFixtureDef(type as FixtureType);
+    const label = def?.description ?? type;
+    const [r, g, b] = def?.colorHex ? hexToRGB(def.colorHex) : [239, 71, 50];
+
+    doc.setFillColor(r, g, b);
+    doc.rect(legendX + 4, legendY - 2.5, 4, 4, 'F');
+    doc.setDrawColor(15, 23, 42);
+    doc.setLineWidth(0.2);
+    doc.rect(legendX + 4, legendY - 2.5, 4, 4);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...COLORS.text);
+    doc.text(`${label}`.slice(0, 22), legendX + 10, legendY + 0.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...COLORS.accent);
+    doc.text(`×${count}`, legendX + legendW - 5, legendY + 0.5, { align: 'right' });
+
+    legendY += 5.5;
+    if (legendY > mapTop + mapH - 10) return;
+  });
+
+  // ── TECHNICAL SEAL (BOTTOM BAR) ──────────────────────────
   const sealY = H - sealH;
   doc.setFillColor(...COLORS.surface);
   doc.rect(0, sealY, W, sealH, 'F');
-  doc.setDrawColor(...COLORS.accent);
-  doc.setLineWidth(0.3);
+  doc.setDrawColor(...COLORS.darkBorder);
+  doc.setLineWidth(0.5);
   doc.line(0, sealY, W, sealY);
 
   const fields = [
-    { label: 'ESPETÁCULO', value: seal.show },
-    { label: 'ILUMINADOR', value: seal.designer },
-    { label: 'OPERADOR', value: seal.operator },
-    { label: 'TEATRO', value: seal.venue },
-    { label: 'DATA', value: seal.date },
-    { label: 'VERSÃO', value: seal.version },
-    { label: 'ESCALA', value: seal.scale },
-    { label: 'COMPANHIA', value: seal.clientCompany },
+    { label: 'ESPETÁCULO', value: seal.show || '—' },
+    { label: 'ILUMINADOR', value: seal.designer || '—' },
+    { label: 'OPERADOR', value: seal.operator || '—' },
+    { label: 'TEATRO / LOCAL', value: seal.venue || '—' },
+    { label: 'DATA', value: seal.date || dateStr },
+    { label: 'VERSÃO', value: seal.version || 'v1.0' },
+    { label: 'ESCALA', value: seal.scale || '1:50' },
+    { label: 'COMPANHIA', value: seal.clientCompany || '—' },
   ];
 
   const colW = W / fields.length;
   fields.forEach((f, i) => {
     const x = i * colW + 4;
-    const divX = (i + 1) * colW;
 
-    // Divider
     if (i > 0) {
       doc.setDrawColor(...COLORS.border);
       doc.setLineWidth(0.2);
       doc.line(i * colW, sealY + 2, i * colW, H - 2);
     }
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5.5);
     doc.setTextColor(...COLORS.muted);
-    doc.text(f.label, x, sealY + 8);
+    doc.text(f.label, x, sealY + 7);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(...COLORS.text);
-    doc.text(f.value || '—', x, sealY + 15, {
-      maxWidth: colW - 8,
+    doc.text(f.value || '—', x, sealY + 14, {
+      maxWidth: colW - 6,
     });
   });
 
   // ── PAGE 2: LEGEND + PATCH TABLE ─────────────────────────
   doc.addPage();
 
-  // Background
+  // White Background
   doc.setFillColor(...COLORS.bg);
   doc.rect(0, 0, W, H, 'F');
 
   // Header
   doc.setFillColor(...COLORS.surface);
-  doc.rect(0, 0, W, 16, 'F');
-  doc.setDrawColor(...COLORS.accent);
-  doc.line(0, 16, W, 16);
+  doc.rect(0, 0, W, 18, 'F');
+  doc.setDrawColor(...COLORS.darkBorder);
+  doc.setLineWidth(0.5);
+  doc.line(0, 18, W, 18);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.setTextColor(...COLORS.text);
-  doc.text('TABELA DE PATCH DMX — LEGENDA DE EQUIPAMENTOS', 8, 10.5);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(...COLORS.muted);
-  doc.text(`${seal.show}  ·  ${seal.designer}  ·  ${seal.date}`, W - 8, 10.5, { align: 'right' });
-
-  // ── LEGEND (left column) ─────────────────────────────────
-  const legendW = 80;
-  const legendX = 8;
-  let legendY = 22;
+  doc.setTextColor(...COLORS.accent);
+  doc.text('TABELA DE PATCH DMX — LEGENDA DE EQUIPAMENTOS', 8, 11);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...COLORS.accent);
-  doc.text('LEGENDA DE SÍMBOLOS', legendX, legendY);
-  legendY += 5;
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.text);
+  doc.text(`${showName}  ·  DATA: ${dateStr}`, W - 8, 11, { align: 'right' });
 
-  // Count fixtures by type
-  const fixtureCount: Record<string, number> = {};
-  const gelatinSet: Set<string> = new Set();
-  elements
-    .filter((el) => el.category !== 'architecture' && el.category !== 'annotation')
-    .forEach((el) => {
-      fixtureCount[el.type] = (fixtureCount[el.type] ?? 0) + 1;
-      if (el.gelatin && el.gelatin !== 'NC') gelatinSet.add(el.gelatin);
-    });
+  // ── LEGEND (left column) ─────────────────────────────────
+  const page2LegendW = 75;
+  const page2LegendX = 8;
+  let page2LegendY = 24;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.accent);
+  doc.text('LEGENDA DE SÍMBOLOS', page2LegendX, page2LegendY);
+  page2LegendY += 5;
 
   Object.entries(fixtureCount).forEach(([type, count]) => {
     const def = getFixtureDef(type as FixtureType);
     const label = def?.description ?? type;
-    const [r, g, b] = def?.colorHex ? hexToRGB(def.colorHex) : [250, 204, 21];
+    const [r, g, b] = def?.colorHex ? hexToRGB(def.colorHex) : [239, 71, 50];
 
     doc.setFillColor(r, g, b);
-    doc.rect(legendX, legendY - 2, 5, 4, 'F');
+    doc.rect(page2LegendX, page2LegendY - 2, 5, 4, 'F');
+    doc.setDrawColor(15, 23, 42);
+    doc.rect(page2LegendX, page2LegendY - 2, 5, 4);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
+    doc.setFontSize(7.5);
     doc.setTextColor(...COLORS.text);
-    doc.text(`${label}`, legendX + 7, legendY + 1);
-    doc.setTextColor(...COLORS.muted);
-    doc.text(`×${count}`, legendX + legendW - 12, legendY + 1);
+    doc.text(`${label}`, page2LegendX + 7, page2LegendY + 1);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...COLORS.accent);
+    doc.text(`×${count}`, page2LegendX + page2LegendW - 10, page2LegendY + 1);
 
-    legendY += 6;
-    if (legendY > H - 30) return; // overflow guard
-  });
-
-  // Gelatinas
-  legendY += 3;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...COLORS.accent);
-  doc.text('GELATINAS / FILTROS', legendX, legendY);
-  legendY += 5;
-
-  [...gelatinSet].forEach((gel) => {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(...COLORS.text);
-    doc.text(gel, legendX, legendY);
-    legendY += 5;
-    if (legendY > H - 30) return;
+    page2LegendY += 6;
+    if (page2LegendY > H - 30) return;
   });
 
   // ── PATCH TABLE (right side) ─────────────────────────────
-  const tableX = legendX + legendW + 4;
+  const tableX = page2LegendX + page2LegendW + 4;
   const tableW = W - tableX - 8;
-  let tableY = 22;
+  let tableY = 24;
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(...COLORS.accent);
-  doc.text('TABELA DE PATCH', tableX, tableY);
+  doc.text('TABELA DE PATCH DMX', tableX, tableY);
   tableY += 5;
 
   const patchRows = generatePatchTable(elements);
 
-  // Table header
   const cols = [
     { label: 'CH', w: 10 },
     { label: 'IDENTIFICADOR / NOME', w: 42 },
@@ -231,26 +270,24 @@ export async function exportTechnicalPDF(
     { label: 'VOLT', w: 12 },
     { label: 'FASE', w: 10 },
     { label: 'W', w: 12 },
-    { label: 'OBSERVAÇÕES', w: -1 }, // fill remaining
+    { label: 'OBSERVAÇÕES', w: -1 },
   ];
 
-  // Header background
   doc.setFillColor(...COLORS.surface);
   doc.rect(tableX, tableY - 3, tableW, 7, 'F');
-  doc.setDrawColor(...COLORS.border);
+  doc.setDrawColor(...COLORS.darkBorder);
   doc.rect(tableX, tableY - 3, tableW, 7);
 
   let cx = tableX + 2;
   cols.forEach((col) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
-    doc.setTextColor(...COLORS.muted);
+    doc.setTextColor(...COLORS.text);
     doc.text(col.label, cx, tableY + 1);
     cx += col.w > 0 ? col.w : tableW - cx + tableX;
   });
   tableY += 7;
 
-  // Rows
   patchRows.slice(0, 45).forEach((row, i) => {
     const el = elements.find((e) => e.label === row.label && e.type === row.type);
     const bg = i % 2 === 0 ? COLORS.bg : COLORS.surface;
@@ -300,21 +337,21 @@ export async function exportTechnicalPDF(
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.muted);
   doc.text(
-    `Gerado por Afina v2.0  ·  ${seal.copyright}`,
+    `Gerado por Afina v2.0  ·  ${seal.show}  ·  ${seal.copyright || 'Todos os direitos reservados'}`,
     W / 2,
     H - 5,
     { align: 'center' }
   );
 
   // Save
-  doc.save(`${(seal.show || 'afina').replace(/\s+/g, '_')}_tecnico.pdf`);
+  const safeShow = (seal.show || 'espetaculo').replace(/[^a-zA-Z0-9_-]/g, '_');
+  doc.save(`${safeShow}_mapa_tecnico.pdf`);
 }
 
-// Utility: hex color to RGB tuple
 function hexToRGB(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
+  const r = parseInt(clean.substring(0, 2), 16) || 0;
+  const g = parseInt(clean.substring(2, 4), 16) || 0;
+  const b = parseInt(clean.substring(4, 6), 16) || 0;
   return [r, g, b];
 }
