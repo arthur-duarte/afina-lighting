@@ -858,13 +858,30 @@ export default function LightingCanvas() {
     });
   }, [addElement, stageX, stageY, stageScale, snapToGrid, snapToRiggingBar]);
 
-  // Split elements by layer
-  const archElements = elements.filter((el) => el.layerId === 'layer_architecture' && layerMap['layer_architecture']?.visible);
-  const riggingElements = elements.filter((el) => el.layerId === 'layer_rigging' && layerMap['layer_rigging']?.visible);
-  const lightingElements = elements.filter((el) => el.layerId === 'layer_lighting' && layerMap['layer_lighting']?.visible);
-  const annotationElements = elements.filter((el) => el.layerId === 'layer_annotations' && layerMap['layer_annotations']?.visible);
+  // Build layerMap lookup table
+  const layerMap = (layers || []).reduce<Record<string, { visible: boolean; locked: boolean }>>((acc, l) => {
+    acc[l.id] = { visible: l.visible, locked: l.locked };
+    return acc;
+  }, {});
+
+  const isLayerVisible = (layerId?: string) => {
+    if (!layerId || !layerMap[layerId]) return true;
+    return layerMap[layerId].visible;
+  };
+
+  // Split elements by layer/category with fallback so NOTHING is ever hidden
+  const archElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'architecture' || el.layerId === 'layer_architecture'));
+  const riggingElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'rigging' || el.layerId === 'layer_rigging'));
+  const annotationElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId) && (el.category === 'annotation' || el.layerId === 'layer_annotations'));
+  const categorizedIds = new Set([
+    ...archElements.map((e) => e.id),
+    ...riggingElements.map((e) => e.id),
+    ...annotationElements.map((e) => e.id),
+  ]);
+  const lightingElements = elements.filter((el) => !categorizedIds.has(el.id) && el.visible !== false && isLayerVisible(el.layerId));
+
   const focusEls = showFocusCoverage
-    ? elements.filter((el) => el.angle && el.angle > 0 && layerMap[el.layerId]?.visible)
+    ? elements.filter((el) => el.angle && el.angle > 0 && isLayerVisible(el.layerId))
     : [];
 
   return (
