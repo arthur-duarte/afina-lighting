@@ -95,6 +95,7 @@ export interface FixtureElement {
 
   // Físico
   angle?: number;         // ângulo de abertura (elipsoidal, etc.)
+  channel?: number;       // canal na mesa de luz
   // Parâmetros estendidos
   customName?: string;    // nome personalizado ex: "Foco Principal Ator A"
   voltage?: string;       // voltagem ex: "220V", "110V", "Bivolt"
