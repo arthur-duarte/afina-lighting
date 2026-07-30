@@ -101,7 +101,7 @@ function FixtureCard({ type, label, icon, colorHex, description }: {
 
 // ── STAGE PRESET CARD ─────────────────────────────────────
 function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
-  const { addElement } = useEditorStore();
+  const store = useEditorStore();
 
   const handleLoad = () => {
     const centerX = Math.round((-store.stageX + 350) / (store.stageScale || 1));
