@@ -104,19 +104,9 @@ function StageCard({ preset }: { preset: (typeof STAGE_PRESETS)[number] }) {
   const store = useEditorStore();
 
   const handleLoad = () => {
-    const centerX = Math.round((-store.stageX + 350) / (store.stageScale || 1));
-    const centerY = Math.round((-store.stageY + 250) / (store.stageScale || 1));
-
-    const minX = Math.min(...preset.elements.map((e) => e.x));
-    const minY = Math.min(...preset.elements.map((e) => e.y));
-
     preset.elements.forEach((el) => {
-      const offsetX = el.x - minX;
-      const offsetY = el.y - minY;
       store.addElement({
         ...el,
-        x: centerX + offsetX - 200,
-        y: centerY + offsetY - 150,
       });
     });
 
@@ -159,8 +149,8 @@ function CustomStageForm() {
       type: 'custom_stage',
       category: 'architecture',
       layerId: 'layer_architecture',
-      x: 400,
-      y: 250,
+      x: 0,
+      y: 0,
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
@@ -347,19 +337,40 @@ export function AssetPanel() {
             ))}
 
             {/* Annotations */}
-            <AccordionSection title="Anotações & Formas" icon={<TypeIcon size={13} />}>
-              <div className="px-2 space-y-0.5">
-                {[
-                  { label: 'Cota de Medida', icon: '↔', type: 'dimension' },
-                  { label: 'Caixa de Texto', icon: 'T', type: 'text' },
-                  { label: 'Seta', icon: '→', type: 'arrow' },
-                  { label: 'Marcador de Foco', icon: '✕', type: 'focus_marker' },
-                ].map((item) => (
-                  <button key={item.type} className="fixture-card w-full text-left">
-                    <div className="fixture-icon text-white/50 font-mono text-sm">{item.icon}</div>
-                    <span className="text-xs text-white/70">{item.label}</span>
-                  </button>
-                ))}
+            <AccordionSection title="Anotações & Texto" icon={<TypeIcon size={13} />} defaultOpen>
+              <div className="px-2 space-y-1">
+                <button
+                  onClick={() => {
+                    const id = store.addElement({
+                      type: 'text',
+                      category: 'annotation',
+                      layerId: 'layer_annotation',
+                      x: 0,
+                      y: 0,
+                      rotation: 0,
+                      scaleX: 1,
+                      scaleY: 1,
+                      label: 'Novo Texto de Anotação',
+                      color: '#0f172a',
+                      gelatin: 'NC',
+                      wattage: 0,
+                      phase: 'unassigned',
+                      locked: false,
+                      visible: true,
+                      customProps: { fontSize: 18 },
+                    });
+                    store.selectElement(id);
+                  }}
+                  className="fixture-card w-full text-left flex items-center gap-2.5 p-2 rounded-lg border border-slate-200 hover:border-afina-500 hover:bg-slate-50 transition-all"
+                >
+                  <div className="w-7 h-7 rounded-md bg-afina-100 border border-afina-300 text-afina-600 font-bold flex items-center justify-center text-sm">
+                    T
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-slate-900">+ Inserir Texto de Anotação</div>
+                    <div className="text-[10px] text-slate-500">Adiciona caixa de texto editável no mapa</div>
+                  </div>
+                </button>
               </div>
             </AccordionSection>
           </>

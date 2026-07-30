@@ -173,6 +173,15 @@ export function TopBar() {
         + Novo Mapa
       </button>
 
+      {/* Centralizar Palco Button */}
+      <button
+        onClick={() => useEditorStore.getState().fitStageToScreen()}
+        className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs rounded-lg font-bold border border-slate-300 transition-all mr-2"
+        title="Centralizar Palco e Enquadrar na Tela"
+      >
+        🎯 Centralizar Palco
+      </button>
+
       {/* File Menu */}
       <div className="relative">
         <button

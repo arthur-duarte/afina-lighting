@@ -341,6 +341,22 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         );
       }
 
+      case 'text': {
+        const txt = el.label || el.customName || 'Texto de Anotação';
+        const fontSize = (el.customProps?.fontSize as number) ?? 16;
+        return (
+          <Group>
+            <Text
+              text={txt}
+              fontSize={fontSize}
+              fontStyle="bold"
+              fill={isSelected ? '#2563eb' : (el.color || '#0f172a')}
+              fontFamily="Inter, sans-serif"
+            />
+          </Group>
+        );
+      }
+
       default: {
         const s = 14;
         return (
@@ -858,11 +874,11 @@ export default function LightingCanvas() {
           +
         </button>
         <button
-          onClick={() => store.resetView()}
-          className="px-2 h-7 text-[10px] font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-          title="Resetar Zoom e Centralizar"
+          onClick={() => store.fitStageToScreen(dimensions.width, dimensions.height)}
+          className="px-2.5 h-7 text-[11px] font-bold rounded-lg bg-afina-500 hover:bg-afina-600 text-white transition-colors flex items-center gap-1 shadow-sm"
+          title="Centralizar Palco e Ajustar 100% da Tela"
         >
-          Reset
+          🎯 Centralizar Palco
         </button>
       </div>
 

@@ -152,6 +152,26 @@ function SingleInspector({ el }: { el: CanvasElement }) {
 
         {/* ── CÊNICO ─── */}
         <div className="panel-label mb-2">Cênico</div>
+        {el.type === 'text' && (
+          <>
+            <FieldRow label="Texto da Anotação">
+              <input
+                value={el.label ?? ''}
+                onChange={(e) => update('label', e.target.value)}
+                className="input-field text-xs"
+                placeholder="Digite o texto da anotação"
+              />
+            </FieldRow>
+            <FieldRow label="Tamanho da Fonte (pt)">
+              <input
+                type="number"
+                value={(el.customProps?.fontSize as number) ?? 18}
+                onChange={(e) => update('customProps', { ...el.customProps, fontSize: Number(e.target.value) })}
+                className="input-field text-xs font-mono"
+              />
+            </FieldRow>
+          </>
+        )}
         <FieldRow label="Identificador">
           <input
             value={el.customName ?? ''}

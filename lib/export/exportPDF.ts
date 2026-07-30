@@ -1,18 +1,29 @@
 // ============================================================
 // AFINA v2.0 — High-Resolution Technical PDF Export (jsPDF A3/A4)
-// Structured into 4 Clean Technical Drawing Rectangles on Pure White Pages
+// Auto-Crops Elements, Removes Grid, 4 Clean Technical Rectangles
 // ============================================================
 
 import { jsPDF } from 'jspdf';
 import type { CanvasElement, TechnicalSeal, FixtureType } from '@/lib/types';
 import { generatePatchTable } from '@/lib/dmx/patchEngine';
 import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
+import { useEditorStore } from '@/lib/store/useEditorStore';
 
 interface KonvaStage {
-  toDataURL: (config: { mimeType: string; quality: number; pixelRatio: number }) => string;
+  x?: () => number;
+  y?: () => number;
+  scaleX?: () => number;
+  toDataURL: (config: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    mimeType: string;
+    quality: number;
+    pixelRatio: number;
+  }) => string;
 }
 
-// Light theme color palette for technical printing
 const COLORS = {
   bg: [255, 255, 255] as [number, number, number],        // Pure white
   surface: [248, 250, 252] as [number, number, number],   // Light Slate 50
@@ -31,6 +42,62 @@ export async function exportTechnicalPDF(
   seal: TechnicalSeal,
   format: 'a3' | 'a4' = 'a3'
 ) {
+  const store = useEditorStore.getState();
+
+  // Temporarily hide grid lines for export
+  const prevGridVisible = store.gridVisible;
+  useEditorStore.setState({ gridVisible: false });
+
+  // Bounding box of elements
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  if (elements.length > 0) {
+    elements.forEach((el) => {
+      const w = (el.customProps?.width as number) || 40;
+      const h = (el.customProps?.height as number) || 40;
+      const left = el.x - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? w / 2 : 0);
+      const top = el.y - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? h / 2 : 0);
+      const right = left + w;
+      const bottom = top + h;
+
+      if (left < minX) minX = left;
+      if (top < minY) minY = top;
+      if (right > maxX) maxX = right;
+      if (bottom > maxY) maxY = bottom;
+    });
+  } else {
+    minX = -300; minY = -200; maxX = 300; maxY = 200;
+  }
+
+  const pad = 60;
+  const worldX = minX - pad;
+  const worldY = minY - pad;
+  const worldW = Math.max(300, (maxX - minX) + pad * 2);
+  const worldH = Math.max(200, (maxY - minY) + pad * 2);
+
+  const stX = stage.x ? stage.x() : store.stageX;
+  const stY = stage.y ? stage.y() : store.stageY;
+  const scale = stage.scaleX ? stage.scaleX() : store.stageScale;
+
+  const cropX = stX + worldX * scale;
+  const cropY = stY + worldY * scale;
+  const cropW = worldW * scale;
+  const cropH = worldH * scale;
+
+  // Snapshot centered on elements area without grid
+  const imgData = stage.toDataURL({
+    x: cropX,
+    y: cropY,
+    width: cropW,
+    height: cropH,
+    mimeType: 'image/png',
+    quality: 1,
+    pixelRatio: 3,
+  });
+
+  // Restore grid
+  useEditorStore.setState({ gridVisible: prevGridVisible });
+
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -48,11 +115,10 @@ export async function exportTechnicalPDF(
 
   // ── PAGE 1: LIGHTING MAP WITH 4 TECHNICAL RECTANGLES ──
 
-  // Pure White Background
   doc.setFillColor(...COLORS.bg);
   doc.rect(0, 0, W, H, 'F');
 
-  // ── RETÂNGULO 1: CABEÇALHO DO PROJETO ──
+  // RETÂNGULO 1: CABEÇALHO DO PROJETO
   const headerX = margin;
   const headerY = margin;
   const headerW = W - margin * 2;
@@ -64,7 +130,6 @@ export async function exportTechnicalPDF(
   doc.setLineWidth(0.5);
   doc.rect(headerX, headerY, headerW, headerH);
 
-  // Logo + Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(...COLORS.accent);
@@ -75,7 +140,6 @@ export async function exportTechnicalPDF(
   doc.setTextColor(...COLORS.muted);
   doc.text('MAPA DE ILUMINAÇÃO CÊNICA', headerX + 32, headerY + 10.5);
 
-  // Show name & Date (Top Right of Header Box)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.text);
@@ -86,7 +150,7 @@ export async function exportTechnicalPDF(
   doc.setTextColor(...COLORS.blue);
   doc.text(`DATA: ${dateStr}   ·   ILUMINADOR: ${designerName.toUpperCase()}`, headerX + headerW - 4, headerY + 13.5, { align: 'right' });
 
-  // ── RETÂNGULO 2: DESENHO DO MAPA DE LUZ (CENTRO ESQUERDA) ──
+  // RETÂNGULO 2: DESENHO DO MAPA DE LUZ
   const plotX = margin;
   const plotY = headerY + headerH + 3;
   const legendW = 60;
@@ -95,29 +159,23 @@ export async function exportTechnicalPDF(
   const plotW = W - margin * 2 - legendW - 3;
   const plotH = H - plotY - sealH - margin - 3;
 
-  // Background and Border
   doc.setFillColor(...COLORS.bg);
   doc.rect(plotX, plotY, plotW, plotH, 'F');
   doc.setDrawColor(...COLORS.darkBorder);
   doc.setLineWidth(0.5);
   doc.rect(plotX, plotY, plotW, plotH);
 
-  // Title label inside plot box
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.5);
   doc.setTextColor(...COLORS.muted);
-  doc.text('PLANTA DE ILUMINAÇÃO (VISÃO GERAL DO PALCO)', plotX + 4, plotY + 6);
+  doc.text('PLANTA DE ILUMINAÇÃO (ELEMENTOS CENTRALIZADOS)', plotX + 4, plotY + 6);
 
-  // Capture Konva stage snapshot
-  const imgData = stage.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 3 });
-
-  // Draw plot image centered
   const innerPad = 4;
   const drawW = plotW - innerPad * 2;
   const drawH = plotH - innerPad * 2 - 4;
   doc.addImage(imgData, 'PNG', plotX + innerPad, plotY + innerPad + 4, drawW, drawH, undefined, 'FAST');
 
-  // ── RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS & SIMBOLOGIA (DIREITA) ──
+  // RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS
   const legendX = plotX + plotW + 3;
   const legendY = plotY;
   const legendH = plotH;
@@ -140,7 +198,6 @@ export async function exportTechnicalPDF(
   doc.line(legendX + 4, page1LegendY, legendX + legendW - 4, page1LegendY);
   page1LegendY += 5;
 
-  // Count fixtures
   const fixtureCount: Record<string, number> = {};
   elements
     .filter((el) => el.category !== 'architecture' && el.category !== 'annotation')
@@ -173,7 +230,7 @@ export async function exportTechnicalPDF(
     if (page1LegendY > legendY + legendH - 8) return;
   });
 
-  // ── RETÂNGULO 4: SELO TÉCNICO DE RODAPÉ (CARIMBO PRANCHA) ──
+  // RETÂNGULO 4: SELO TÉCNICO DE RODAPÉ
   const sealY = H - sealH - margin;
   const sealX = margin;
   const sealW = W - margin * 2;
@@ -218,13 +275,12 @@ export async function exportTechnicalPDF(
     });
   });
 
-  // ── PAGE 2: LEGEND + PATCH TABLE ─────────────────────────
+  // PAGE 2: LEGEND + PATCH TABLE
   doc.addPage();
 
   doc.setFillColor(...COLORS.bg);
   doc.rect(0, 0, W, H, 'F');
 
-  // Header
   doc.setFillColor(...COLORS.surface);
   doc.rect(margin, margin, headerW, headerH, 'F');
   doc.setDrawColor(...COLORS.darkBorder);
@@ -241,7 +297,6 @@ export async function exportTechnicalPDF(
   doc.setTextColor(...COLORS.text);
   doc.text(`${showName}  ·  DATA: ${dateStr}`, W - margin - 4, margin + 10.5, { align: 'right' });
 
-  // ── LEGEND (left column) ──
   const page2LegendW = 75;
   const page2LegendX = margin;
   let page2LegendY = margin + headerH + 6;
@@ -274,7 +329,6 @@ export async function exportTechnicalPDF(
     if (page2LegendY > H - 30) return;
   });
 
-  // ── PATCH TABLE (right side) ──
   const tableX = page2LegendX + page2LegendW + 4;
   const tableW = W - tableX - margin;
   let tableY = margin + headerH + 6;
@@ -359,7 +413,6 @@ export async function exportTechnicalPDF(
     if (tableY > H - 15) return;
   });
 
-  // Footer
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.muted);
@@ -370,7 +423,6 @@ export async function exportTechnicalPDF(
     { align: 'center' }
   );
 
-  // Save
   const safeShow = (seal.show || 'espetaculo').replace(/[^a-zA-Z0-9_-]/g, '_');
   doc.save(`${safeShow}_mapa_tecnico.pdf`);
 }

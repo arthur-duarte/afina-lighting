@@ -1,40 +1,93 @@
 // ============================================================
 // AFINA v2.0 — High-Resolution Technical PNG Export
-// Structured into 3-4 Clean Technical Drawing Rectangles on a Pure White Sheet
+// Auto-Crops Elements, Removes Grid, 4 Clean Technical Rectangles
 // ============================================================
 
-import type { CanvasElement, TechnicalSeal, FixtureType } from '@/lib/types';
+import type { CanvasElement, TechnicalSeal } from '@/lib/types';
 import { getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
+import { useEditorStore } from '@/lib/store/useEditorStore';
 
 interface KonvaStage {
+  x?: () => number;
+  y?: () => number;
+  scaleX?: () => number;
   toDataURL: (config: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
     mimeType: string;
     quality: number;
     pixelRatio: number;
   }) => string;
 }
 
-/**
- * Exports the technical lighting plot as a structured 3-box technical drawing sheet (300 DPI)
- * on a pure white background with Show Name, Date, Equipment Legend, and Technical Seal.
- */
 export function exportStageToPNG(
   stage: KonvaStage,
   elements: CanvasElement[],
   seal: TechnicalSeal,
   filename = 'afina_mapa_de_luz.png'
 ) {
-  // 1. Capture high-res Konva stage snapshot
+  const store = useEditorStore.getState();
+
+  // Temporarily hide grid lines for export
+  const prevGridVisible = store.gridVisible;
+  useEditorStore.setState({ gridVisible: false });
+
+  // Calculate bounding box of all elements on canvas
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  if (elements.length > 0) {
+    elements.forEach((el) => {
+      const w = (el.customProps?.width as number) || 40;
+      const h = (el.customProps?.height as number) || 40;
+      const left = el.x - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? w / 2 : 0);
+      const top = el.y - (el.type === 'custom_stage' || el.type === 'stage_polygon' ? h / 2 : 0);
+      const right = left + w;
+      const bottom = top + h;
+
+      if (left < minX) minX = left;
+      if (top < minY) minY = top;
+      if (right > maxX) maxX = right;
+      if (bottom > maxY) maxY = bottom;
+    });
+  } else {
+    minX = -300; minY = -200; maxX = 300; maxY = 200;
+  }
+
+  const pad = 60;
+  const worldX = minX - pad;
+  const worldY = minY - pad;
+  const worldW = Math.max(300, (maxX - minX) + pad * 2);
+  const worldH = Math.max(200, (maxY - minY) + pad * 2);
+
+  const stX = stage.x ? stage.x() : store.stageX;
+  const stY = stage.y ? stage.y() : store.stageY;
+  const scale = stage.scaleX ? stage.scaleX() : store.stageScale;
+
+  const cropX = stX + worldX * scale;
+  const cropY = stY + worldY * scale;
+  const cropW = worldW * scale;
+  const cropH = worldH * scale;
+
+  // Snapshot centered strictly on elements area without grid
   const stageDataUrl = stage.toDataURL({
+    x: cropX,
+    y: cropY,
+    width: cropW,
+    height: cropH,
     mimeType: 'image/png',
     quality: 1,
-    pixelRatio: 3, // 300 DPI sharp
+    pixelRatio: 3,
   });
+
+  // Restore grid state
+  useEditorStore.setState({ gridVisible: prevGridVisible });
 
   const img = new Image();
   img.src = stageDataUrl;
   img.onload = () => {
-    // 2. Offscreen composite canvas (A3 proportion 2400 x 1600 px)
+    // Composite 4-box technical sheet (2400 x 1600 px)
     const exportCanvas = document.createElement('canvas');
     const width = 2400;
     const height = 1600;
@@ -50,7 +103,7 @@ export function exportStageToPNG(
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // ── RETÂNGULO 1: CABEÇALHO DO PROJETO E APP USADO (TOPO) ──
+    // ── RETÂNGULO 1: CABEÇALHO DO PROJETO ──
     const headerX = margin;
     const headerY = margin;
     const headerW = width - margin * 2;
@@ -62,7 +115,7 @@ export function exportStageToPNG(
     ctx.lineWidth = 3;
     ctx.strokeRect(headerX, headerY, headerW, headerH);
 
-    // Brand logo + App info
+    // Logo
     ctx.fillStyle = '#ef4732';
     ctx.fillRect(headerX + 20, headerY + 20, 44, 44);
     ctx.fillStyle = '#ffffff';
@@ -76,7 +129,7 @@ export function exportStageToPNG(
     ctx.font = '13px Inter, sans-serif';
     ctx.fillText('SOFTWARE DE ILUMINAÇÃO CÊNICA & MAPA DE LUZ 2D', headerX + 78, headerY + 68);
 
-    // Show Title & Date info (Top Right of Header Box)
+    // Title info
     const showName = (seal.show || 'NOVO ESPETÁCULO').toUpperCase();
     const dateStr = seal.date || new Date().toLocaleDateString('pt-BR');
     const designerName = seal.designer || 'Iluminador não informado';
@@ -107,13 +160,12 @@ export function exportStageToPNG(
     ctx.lineWidth = 3;
     ctx.strokeRect(plotX, plotY, plotW, plotH);
 
-    // Title label inside plot box
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 12px "JetBrains Mono", monospace';
-    ctx.fillText('PLANTA DE ILUMINAÇÃO (VISÃO GERAL DO PALCO)', plotX + 16, plotY + 24);
+    ctx.fillText('PLANTA DE ILUMINAÇÃO (ELEMENTOS CENTRALIZADOS)', plotX + 16, plotY + 24);
 
-    // Draw stage plot image centered with padding
-    const innerPad = 24;
+    // Draw plot image centered
+    const innerPad = 20;
     const boxW = plotW - innerPad * 2;
     const boxH = plotH - innerPad * 2 - 20;
 
@@ -134,7 +186,7 @@ export function exportStageToPNG(
 
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-    // ── RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS & SIMBOLOGIA (DIREITA) ──
+    // ── RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS (DIREITA) ──
     const legendX = plotX + plotW + 20;
     const legendY = plotY;
     const legendH = plotH;
@@ -145,7 +197,6 @@ export function exportStageToPNG(
     ctx.lineWidth = 3;
     ctx.strokeRect(legendX, legendY, legendW, legendH);
 
-    // Header inside Legend box
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 16px Inter, sans-serif';
     ctx.fillText('LEGENDA DE EQUIPAMENTOS', legendX + 20, legendY + 36);
@@ -157,7 +208,6 @@ export function exportStageToPNG(
     ctx.lineTo(legendX + legendW - 20, legendY + 48);
     ctx.stroke();
 
-    // Count fixtures
     const fixtureMap = new Map<string, { label: string; color: string; count: number }>();
     elements
       .filter((el) => el.category !== 'architecture' && el.category !== 'annotation')
@@ -175,19 +225,16 @@ export function exportStageToPNG(
 
     let itemY = legendY + 84;
     fixtureMap.forEach((item) => {
-      // Swatch color box
       ctx.fillStyle = item.color;
       ctx.fillRect(legendX + 20, itemY - 14, 22, 22);
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(legendX + 20, itemY - 14, 22, 22);
 
-      // Label text
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 14px Inter, sans-serif';
       ctx.fillText(item.label, legendX + 52, itemY + 2);
 
-      // Count
       ctx.textAlign = 'right';
       ctx.fillStyle = '#ef4732';
       ctx.font = 'bold 16px "JetBrains Mono", monospace';
@@ -241,7 +288,6 @@ export function exportStageToPNG(
       ctx.fillText(f.val, colX + 12, sealY + 68);
     });
 
-    // Trigger PNG download
     const link = document.createElement('a');
     link.href = exportCanvas.toDataURL('image/png');
     const safeShow = (seal.show || 'espetaculo').replace(/[^a-zA-Z0-9_-]/g, '_');
