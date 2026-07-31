@@ -31,6 +31,7 @@ declare global {
 export function TopBar() {
   const {
     activeTool, setActiveTool,
+    pranchaoMode, togglePranchaoMode,
     undo, redo, historyIndex, history,
     colorTheme, setColorTheme,
     backstageMode, toggleBackstageMode,
