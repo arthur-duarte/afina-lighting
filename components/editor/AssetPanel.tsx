@@ -332,91 +332,93 @@ export function AssetPanel() {
                 )}
               </div>
             ) : (
-              <>
+              <div>
                 {/* Stage Presets */}
-            <AccordionSection title="Arquitetura & Palcos" icon={<Grid3x3Icon size={13} />} defaultOpen>
-              <div className="space-y-0.5">
-                {STAGE_PRESETS.map((preset) => (
-                  <StageCard key={preset.id} preset={preset} />
-                ))}
-              </div>
-              <CustomStageForm />
-            </AccordionSection>
-
-            {/* Cenografia e Objetos */}
-            <AccordionSection title="Cenografia & Formas Gerais" icon={<BoxIcon size={13} />} defaultOpen>
-              <div className="space-y-0.5">
-                {getFixturesByCategory('architecture')
-                  .filter((f) => f.type.startsWith('scenery'))
-                  .map((f) => (
-                    <FixtureCard key={f.type} {...f} />
-                  ))}
-              </div>
-            </AccordionSection>
-
-            {/* Rigging */}
-            <AccordionSection title="Rigging & Estruturas" icon={<ZapIcon size={13} />} defaultOpen>
-              <div className="space-y-0.5">
-                {getFixturesByCategory('rigging').map((f) => (
-                  <FixtureCard key={f.type} {...f} />
-                ))}
-              </div>
-            </AccordionSection>
-
-            {/* Fixture categories */}
-            {categories.map((cat) => (
-              <AccordionSection
-                key={cat}
-                title={CATEGORY_LABELS[cat]}
-                icon={<ZapIcon size={13} />}
-                defaultOpen={cat === 'conventional'}
-              >
-                <div className="space-y-0.5">
-                  {getFixturesByCategory(cat).map((f) => (
-                    <FixtureCard key={f.type} {...f} />
-                  ))}
-                </div>
-              </AccordionSection>
-            ))}
-
-            {/* Annotations */}
-            <AccordionSection title="Anotações & Texto" icon={<TypeIcon size={13} />} defaultOpen>
-              <div className="px-2 space-y-1">
-                <button
-                  onClick={() => {
-                    const storeState = useEditorStore.getState();
-                    const id = storeState.addElement({
-                      type: 'text',
-                      category: 'annotation',
-                      layerId: 'layer_annotations',
-                      x: 0,
-                      y: 0,
-                      rotation: 0,
-                      scaleX: 1,
-                      scaleY: 1,
-                      label: 'Novo Texto de Anotação',
-                      color: '#0f172a',
-                      gelatin: 'NC',
-                      wattage: 0,
-                      phase: 'unassigned',
-                      locked: false,
-                      visible: true,
-                      customProps: { fontSize: 18 },
-                    });
-                    storeState.selectElement(id);
-                  }}
-                  className="fixture-card w-full text-left flex items-center gap-2.5 p-2 rounded-lg border border-slate-200 hover:border-afina-500 hover:bg-slate-50 transition-all"
-                >
-                  <div className="w-7 h-7 rounded-md bg-afina-100 border border-afina-300 text-afina-600 font-bold flex items-center justify-center text-sm">
-                    T
+                <AccordionSection title="Arquitetura & Palcos" icon={<Grid3x3Icon size={13} />} defaultOpen>
+                  <div className="space-y-0.5">
+                    {STAGE_PRESETS.map((preset) => (
+                      <StageCard key={preset.id} preset={preset} />
+                    ))}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-slate-900">+ Inserir Texto de Anotação</div>
-                    <div className="text-[10px] text-slate-500">Adiciona caixa de texto editável no mapa</div>
+                  <CustomStageForm />
+                </AccordionSection>
+
+                {/* Cenografia e Objetos */}
+                <AccordionSection title="Cenografia & Formas Gerais" icon={<BoxIcon size={13} />} defaultOpen>
+                  <div className="space-y-0.5">
+                    {getFixturesByCategory('architecture')
+                      .filter((f) => f.type.startsWith('scenery'))
+                      .map((f) => (
+                        <FixtureCard key={f.type} {...f} />
+                      ))}
                   </div>
-                </button>
+                </AccordionSection>
+
+                {/* Rigging */}
+                <AccordionSection title="Rigging & Estruturas" icon={<ZapIcon size={13} />} defaultOpen>
+                  <div className="space-y-0.5">
+                    {getFixturesByCategory('rigging').map((f) => (
+                      <FixtureCard key={f.type} {...f} />
+                    ))}
+                  </div>
+                </AccordionSection>
+
+                {/* Fixture categories */}
+                {categories.map((cat) => (
+                  <AccordionSection
+                    key={cat}
+                    title={CATEGORY_LABELS[cat]}
+                    icon={<ZapIcon size={13} />}
+                    defaultOpen={cat === 'conventional'}
+                  >
+                    <div className="space-y-0.5">
+                      {getFixturesByCategory(cat).map((f) => (
+                        <FixtureCard key={f.type} {...f} />
+                      ))}
+                    </div>
+                  </AccordionSection>
+                ))}
+
+                {/* Annotations */}
+                <AccordionSection title="Anotações & Texto" icon={<TypeIcon size={13} />} defaultOpen>
+                  <div className="px-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        const storeState = useEditorStore.getState();
+                        const id = storeState.addElement({
+                          type: 'text',
+                          category: 'annotation',
+                          layerId: 'layer_annotations',
+                          x: 0,
+                          y: 0,
+                          rotation: 0,
+                          scaleX: 1,
+                          scaleY: 1,
+                          label: 'Novo Texto de Anotação',
+                          color: '#0f172a',
+                          gelatin: 'NC',
+                          wattage: 0,
+                          phase: 'unassigned',
+                          locked: false,
+                          visible: true,
+                          customProps: { fontSize: 18 },
+                        });
+                        storeState.selectElement(id);
+                      }}
+                      className="fixture-card w-full text-left flex items-center gap-2.5 p-2 rounded-lg border border-slate-200 hover:border-afina-500 hover:bg-slate-50 transition-all"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-afina-100 border border-afina-300 text-afina-600 font-bold flex items-center justify-center text-sm">
+                        T
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs font-bold text-slate-900">+ Inserir Texto de Anotação</div>
+                        <div className="text-[10px] text-slate-500">Adiciona caixa de texto editável no mapa</div>
+                      </div>
+                    </button>
+                  </div>
+                </AccordionSection>
               </div>
-            </AccordionSection>
+            )}
           </>
         )}
         {selectedTab === 'layers' && <LayerPanel />}
