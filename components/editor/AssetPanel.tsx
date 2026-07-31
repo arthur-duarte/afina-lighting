@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useEditorStore } from '@/lib/store/useEditorStore';
-import { CATEGORY_LABELS, getFixturesByCategory, getFixtureDef } from '@/lib/fixtures/fixtureLibrary';
+import { CATEGORY_LABELS, getFixturesByCategory, getFixtureDef, FIXTURE_LIBRARY } from '@/lib/fixtures/fixtureLibrary';
 import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { PatchPanel } from './PatchPanel';
 import { DynamicLegend } from './DynamicLegend';
@@ -11,7 +11,7 @@ import type { FixtureType } from '@/lib/types';
 import {
   ChevronDownIcon, ChevronRightIcon,
   Grid3x3Icon, PenToolIcon, TypeIcon,
-  ZapIcon, LayersIcon, BoxIcon, ActivityIcon, ListIcon,
+  ZapIcon, LayersIcon, BoxIcon, ActivityIcon, ListIcon, SearchIcon, XIcon,
 } from 'lucide-react';
 
 // ── ACCORDION SECTION ─────────────────────────────────────
@@ -256,9 +256,17 @@ function LayerPanel() {
 // ── MAIN ASSET PANEL ──────────────────────────────────────
 export function AssetPanel() {
   const { selectedTab, setSelectedTab } = useEditorStore();
+  const [searchQuery, setSearchQuery] = useState('');
   type Tab = 'library' | 'layers' | 'patch' | 'legend';
 
   const categories = ['conventional', 'led', 'moving', 'vintage', 'effect'];
+
+  const searchResults = FIXTURE_LIBRARY.filter(
+    (f) =>
+      f.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const tabs: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: 'library', icon: <BoxIcon size={12} />, label: 'Biblioteca' },
@@ -274,7 +282,7 @@ export function AssetPanel() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-          onClick={() => setSelectedTab(tab.id)}
+            onClick={() => setSelectedTab(tab.id)}
             className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
               selectedTab === tab.id
                 ? 'text-white border-b-2 border-afina-500'
@@ -290,7 +298,42 @@ export function AssetPanel() {
       <div className="flex-1 overflow-y-auto">
         {selectedTab === 'library' && (
           <>
-            {/* Stage Presets */}
+            {/* Search Box */}
+            <div className="p-2 border-b border-editor-border bg-slate-900/40">
+              <div className="relative">
+                <SearchIcon size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Pesquisar refletor (ex: PAR, Fresnel...)"
+                  className="w-full bg-slate-800/80 border border-slate-700 text-slate-100 placeholder-slate-400 text-xs rounded-lg pl-8 pr-7 py-1.5 focus:outline-none focus:border-afina-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-2.5 text-slate-400 hover:text-white text-xs"
+                  >
+                    <XIcon size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {searchQuery ? (
+              <div className="p-2 space-y-0.5">
+                <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wide">
+                  Resultados da pesquisa ({searchResults.length})
+                </div>
+                {searchResults.length > 0 ? (
+                  searchResults.map((f) => <FixtureCard key={f.type} {...f} />)
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-500">Nenhum refletor encontrado</div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Stage Presets */}
             <AccordionSection title="Arquitetura & Palcos" icon={<Grid3x3Icon size={13} />} defaultOpen>
               <div className="space-y-0.5">
                 {STAGE_PRESETS.map((preset) => (

@@ -17,21 +17,26 @@ export type FixtureType =
   | 'fresnel'
   | 'pc'
   | 'par64'
+  | 'par38'
   | 'pinspot'
   | 'setlight'
   | 'svoboda'
   | 'minibruta'
   | 'hqi'
   | 'linestra'
+  | 'other_conventional'
   | 'parled'
   | 'barled'
+  | 'other_led'
   | 'moving_spot'
   | 'moving_beam'
   | 'moving_wash'
+  | 'other_moving'
   | 'mirrorball'
   | 'uv'
   | 'strobe'
   | 'fogmachine'
+  | 'other_effect'
   | 'lightingbar'
   | 'truss_q25'
   | 'truss_q30'
@@ -104,6 +109,7 @@ export interface FixtureElement {
   // Visibilidade / lock
   locked: boolean;
   visible: boolean;
+  showLabel?: boolean;     // Se true, exibe nome/número e DMX no canvas (default: false)
 
   // Props customizadas por tipo
   customProps?: Record<string, unknown>;
@@ -177,6 +183,8 @@ export interface EditorState {
   stageX: number;
   stageY: number;
   stageScale: number;
+  containerWidth: number;
+  containerHeight: number;
 
   // Grid
   gridVisible: boolean;

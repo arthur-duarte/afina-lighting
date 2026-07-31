@@ -267,6 +267,19 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         );
       }
 
+      case 'par38': {
+        const w = 16, h = 13;
+        return (
+          <Group>
+            <Rect
+              x={-w / 2} y={-h / 2} width={w} height={h} cornerRadius={2}
+              fill={color} stroke={strokeColor} strokeWidth={strokeWidth}
+            />
+            <Circle radius={4} fill="#ffffff" stroke="#0f172a" strokeWidth={1} />
+          </Group>
+        );
+      }
+
       case 'parled': {
         const r = 14;
         return (
@@ -371,7 +384,7 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
     }
   };
 
-  const showTextLabel = el.label && (store.showFixtureLabels || isSelected) && el.category !== 'architecture' && el.type !== 'wall' && el.type !== 'custom_stage' && el.type !== 'stage_polygon';
+  const showTextLabel = Boolean(el.label && (el.showLabel || store.showFixtureLabels) && el.category !== 'architecture' && el.type !== 'wall' && el.type !== 'custom_stage' && el.type !== 'stage_polygon');
 
   return (
     <>
@@ -390,7 +403,7 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
       >
         {renderSymbol()}
 
-        {/* Fixture Name Label (Togglable) */}
+        {/* Fixture Name Label (Togglable via Inspector) */}
         {showTextLabel && (
           <Text
             text={el.customName || el.label}
@@ -404,8 +417,8 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
           />
         )}
 
-        {/* DMX Address Badge */}
-        {el.dmx && el.dmx.address > 0 && (
+        {/* DMX Address Badge (Top: 1/1) - Togglable */}
+        {showTextLabel && el.dmx && el.dmx.address > 0 && (
           <Group x={0} y={-26}>
             <Rect
               x={-18} y={-7} width={36} height={14}

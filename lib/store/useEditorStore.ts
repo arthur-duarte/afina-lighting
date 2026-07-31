@@ -89,6 +89,8 @@ const initialState: EditorState = {
   stageX: 0,
   stageY: 0,
   stageScale: 1,
+  containerWidth: 1000,
+  containerHeight: 700,
 
   gridVisible: true,
   gridSize: 500,
@@ -110,7 +112,7 @@ const initialState: EditorState = {
   colorTheme: 'light',
   backstageMode: false,
   showFocusCoverage: false,
-  showFixtureLabels: true,
+  showFixtureLabels: false,
   showNewMapModal: false,
   layerPanelOpen: false,
   selectedTab: 'library',
@@ -127,6 +129,7 @@ interface EditorStore extends EditorState {
   // Canvas viewport
   setStagePosition: (x: number, y: number) => void;
   setStageScale: (scale: number) => void;
+  setContainerDimensions: (w: number, h: number) => void;
   resetView: () => void;
   fitStageToScreen: (canvasW?: number, canvasH?: number) => void;
 
@@ -172,6 +175,8 @@ interface EditorStore extends EditorState {
   // Canvas operations
   groupElements: (ids: string[]) => void;
   rotateElements: (ids: string[], degrees: number) => void;
+  bringToFront: (ids: string[]) => void;
+  sendToBack: (ids: string[]) => void;
 
   // Snap helper
   snapToGrid: (value: number) => number;
@@ -207,13 +212,17 @@ export const useEditorStore = create<EditorStore>()(
       // ── VIEWPORT ────────────────────────────────────────────
       setStagePosition: (x, y) => set({ stageX: x, stageY: y }),
       setStageScale: (scale) => set({ stageScale: Math.max(0.05, Math.min(8, scale)) }),
+      setContainerDimensions: (w, h) => set({ containerWidth: w, containerHeight: h }),
       resetView: () => {
         const { fitStageToScreen } = get();
         fitStageToScreen();
       },
 
-      fitStageToScreen: (canvasW = 800, canvasH = 600) => {
-        const { elements } = get();
+      fitStageToScreen: (customW?, customH?) => {
+        const { elements, containerWidth, containerHeight } = get();
+        const canvasW = customW || containerWidth || 1000;
+        const canvasH = customH || containerHeight || 700;
+
         if (elements.length === 0) {
           set({ stageX: 0, stageY: 0, stageScale: 1 });
           return;
@@ -242,12 +251,11 @@ export const useEditorStore = create<EditorStore>()(
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
 
-        // Available space with 90px padding margin ("respiro lateral amplo")
-        const pad = 90;
+        const pad = 60;
         const availW = Math.max(200, canvasW - pad * 2);
         const availH = Math.max(200, canvasH - pad * 2);
 
-        const scale = Math.max(0.4, Math.min(2.0, Math.min(availW / contentW, availH / contentH)));
+        const scale = Math.max(0.3, Math.min(2.5, Math.min(availW / contentW, availH / contentH)));
 
         const stageX = canvasW / 2 - centerX * scale;
         const stageY = canvasH / 2 - centerY * scale;
@@ -449,6 +457,22 @@ export const useEditorStore = create<EditorStore>()(
               : el
           ),
         }));
+      },
+
+      bringToFront: (ids) => {
+        const { elements } = get();
+        const targets = elements.filter((el) => ids.includes(el.id));
+        const rest = elements.filter((el) => !ids.includes(el.id));
+        get().pushHistory();
+        set({ elements: [...rest, ...targets] });
+      },
+
+      sendToBack: (ids) => {
+        const { elements } = get();
+        const targets = elements.filter((el) => ids.includes(el.id));
+        const rest = elements.filter((el) => !ids.includes(el.id));
+        get().pushHistory();
+        set({ elements: [...targets, ...rest] });
       },
 
       // ── DMX ──────────────────────────────────────────────────────

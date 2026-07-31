@@ -171,9 +171,26 @@ export async function exportTechnicalPDF(
   doc.text('PLANTA DE ILUMINAÇÃO (ELEMENTOS CENTRALIZADOS)', plotX + 4, plotY + 6);
 
   const innerPad = 4;
-  const drawW = plotW - innerPad * 2;
-  const drawH = plotH - innerPad * 2 - 4;
-  doc.addImage(imgData, 'PNG', plotX + innerPad, plotY + innerPad + 4, drawW, drawH, undefined, 'FAST');
+  const boxW = plotW - innerPad * 2;
+  const boxH = plotH - innerPad * 2 - 6;
+
+  const imgAspect = cropW / cropH;
+  const boxAspect = boxW / boxH;
+
+  let drawW = boxW;
+  let drawH = boxH;
+  let drawX = plotX + innerPad;
+  let drawY = plotY + innerPad + 6;
+
+  if (imgAspect > boxAspect) {
+    drawH = boxW / imgAspect;
+    drawY = plotY + innerPad + 6 + (boxH - drawH) / 2;
+  } else {
+    drawW = boxH * imgAspect;
+    drawX = plotX + innerPad + (boxW - drawW) / 2;
+  }
+
+  doc.addImage(imgData, 'PNG', drawX, drawY, drawW, drawH, undefined, 'FAST');
 
   // RETÂNGULO 3: LEGENDA DE EQUIPAMENTOS
   const legendX = plotX + plotW + 3;

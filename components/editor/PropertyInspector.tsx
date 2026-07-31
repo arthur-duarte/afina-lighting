@@ -19,7 +19,7 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 
 // ── SINGLE ELEMENT INSPECTOR ──────────────────────────────
 function SingleInspector({ el }: { el: CanvasElement }) {
-  const { updateElement, removeElements, duplicateElements, rotateElements } = useEditorStore();
+  const { updateElement, removeElements, duplicateElements, rotateElements, bringToFront, sendToBack } = useEditorStore();
   const def = getFixtureDef(el.type);
   const hasConflict = el.dmx?.hasConflict;
 
@@ -46,34 +46,42 @@ function SingleInspector({ el }: { el: CanvasElement }) {
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="flex gap-1 mt-2">
-          <button
-            onClick={() => rotateElements([el.id], 15)}
-            className="icon-btn flex-1 text-[10px] flex flex-col items-center gap-0.5"
-            title="Rotacionar +15° (R)"
-          >
-            <RotateCwIcon size={13} /> <span>+15°</span>
-          </button>
+        {/* Quick actions (Girar, Copiar, Remover, Frente, Atrás) */}
+        <div className="grid grid-cols-5 gap-1 mt-2">
           <button
             onClick={() => rotateElements([el.id], 45)}
-            className="icon-btn flex-1 text-[10px] flex flex-col items-center gap-0.5"
+            className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5"
+            title="Girar +45°"
           >
-            <RotateCwIcon size={13} /> <span>+45°</span>
+            <RotateCwIcon size={12} /> <span>+45°</span>
           </button>
           <button
             onClick={() => duplicateElements([el.id])}
-            className="icon-btn flex-1 text-[10px] flex flex-col items-center gap-0.5"
+            className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5"
             title="Duplicar (Ctrl+D)"
           >
-            <CopyIcon size={13} /> <span>Copiar</span>
+            <CopyIcon size={12} /> <span>Copiar</span>
+          </button>
+          <button
+            onClick={() => bringToFront([el.id])}
+            className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 text-blue-400 hover:text-blue-300"
+            title="Trazer para Frente da Camada"
+          >
+            <span>⬆️</span> <span>Frente</span>
+          </button>
+          <button
+            onClick={() => sendToBack([el.id])}
+            className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 text-amber-400 hover:text-amber-300"
+            title="Enviar para Trás da Camada"
+          >
+            <span>⬇️</span> <span>Atrás</span>
           </button>
           <button
             onClick={() => removeElements([el.id])}
-            className="icon-btn flex-1 text-[10px] flex flex-col items-center gap-0.5 hover:text-red-400"
+            className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 hover:text-red-400"
             title="Remover (Delete)"
           >
-            <Trash2Icon size={13} /> <span>Remover</span>
+            <Trash2Icon size={12} /> <span>Apagar</span>
           </button>
         </div>
       </div>
@@ -179,6 +187,19 @@ function SingleInspector({ el }: { el: CanvasElement }) {
             className="input-field text-xs"
             placeholder="ex: Foco Principal Ator A"
           />
+        </FieldRow>
+        <FieldRow label="Rótulo Canvas">
+          <button
+            onClick={() => update('showLabel', !el.showLabel)}
+            className={`w-full py-1 px-2.5 rounded-md border text-xs font-semibold flex items-center justify-between transition-all ${
+              el.showLabel
+                ? 'bg-afina-500/20 border-afina-500 text-afina-300'
+                : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>🏷️ Nome & DMX</span>
+            <span>{el.showLabel ? 'Exibir' : 'Ocultar'}</span>
+          </button>
         </FieldRow>
         <FieldRow label="Cor / Símbolo">
           <div className="flex items-center gap-2">
