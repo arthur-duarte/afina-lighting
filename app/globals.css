@@ -204,12 +204,12 @@
     color: var(--text-primary);
   }
 
-  /* ── Keyboard shortcut badge ── */
+  /* ── Keyboard shortcut badge (Alto Contraste) ── */
   .kbd {
-    @apply font-mono text-[9px] rounded px-1 py-0.5 leading-none;
-    color: var(--text-muted);
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+    @apply font-mono text-[10px] font-bold rounded px-1.5 py-0.5 leading-none inline-block shadow-sm;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    border: 1px solid #94a3b8 !important;
   }
 
   /* ── Form fields ── */

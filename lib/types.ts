@@ -110,6 +110,7 @@ export interface FixtureElement {
   locked: boolean;
   visible: boolean;
   showLabel?: boolean;     // Se true, exibe nome/número e DMX no canvas (default: false)
+  showFocusCone?: boolean; // Se true, exibe cone de foco para este refletor específico
 
   // Props customizadas por tipo
   customProps?: Record<string, unknown>;
@@ -186,11 +187,12 @@ export interface EditorState {
   containerWidth: number;
   containerHeight: number;
 
-  // Grid
+  // Grid & Régua
   gridVisible: boolean;
   gridSize: number;           // mm (padrão: 500mm = 0.5m)
   gridPixelsPerMeter: number; // px por metro no canvas
   snapEnabled: boolean;
+  rulerVisible: boolean;       // Régua cênica superior/lateral
 
   // Ferramenta ativa
   activeTool: ToolMode;
@@ -211,6 +213,7 @@ export interface EditorState {
   // UI state
   colorTheme: 'dark' | 'light' | 'backstage';
   backstageMode: boolean;
+  pranchaoMode: boolean;       // Modo Pranchão de Afinação em Tela Cheia (otimizado para Tablet)
   showFocusCoverage: boolean;
   showFixtureLabels: boolean;
   showNewMapModal: boolean;
@@ -219,6 +222,9 @@ export interface EditorState {
 
   // Módulos
   technicalSeal: TechnicalSeal;
+
+  // Clipboard
+  clipboard?: CanvasElement[];
 
   // Patch
   universeCount: number;

@@ -201,6 +201,21 @@ function SingleInspector({ el }: { el: CanvasElement }) {
             <span>{el.showLabel ? 'Exibir' : 'Ocultar'}</span>
           </button>
         </FieldRow>
+        {el.angle !== undefined && (
+          <FieldRow label="Cone de Foco">
+            <button
+              onClick={() => update('showFocusCone', !el.showFocusCone)}
+              className={`w-full py-1 px-2.5 rounded-md border text-xs font-semibold flex items-center justify-between transition-all ${
+                el.showFocusCone
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                  : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>🔦 Cone de Foco</span>
+              <span>{el.showFocusCone ? 'Exibir' : 'Ocultar'}</span>
+            </button>
+          </FieldRow>
+        )}
         <FieldRow label="Cor / Símbolo">
           <div className="flex items-center gap-2">
             <input
@@ -357,27 +372,148 @@ function SingleInspector({ el }: { el: CanvasElement }) {
 
 // ── MULTI-SELECTION INSPECTOR ─────────────────────────────
 function MultiInspector({ els }: { els: CanvasElement[] }) {
-  const { removeElements, duplicateElements, rotateElements } = useEditorStore();
+  const {
+    updateElement, removeElements, duplicateElements, rotateElements,
+    bringToFront, sendToBack, alignSelectedX, alignSelectedY, distributeSelectedHorizontal,
+  } = useEditorStore();
   const ids = els.map((e) => e.id);
   const totalWatts = els.reduce((s, e) => s + (e.wattage ?? 0), 0);
 
+  // Average scale for display
+  const avgScale = els.reduce((s, e) => s + (e.scaleX ?? 1), 0) / els.length;
+
+  const applyScaleToAll = (newScale: number) => {
+    els.forEach((el) => {
+      updateElement(el.id, { scaleX: newScale, scaleY: newScale });
+    });
+  };
+
+  const applyScaleMultiplier = (multiplier: number) => {
+    els.forEach((el) => {
+      const cur = el.scaleX ?? 1;
+      const next = Math.max(0.1, Math.min(10, cur * multiplier));
+      updateElement(el.id, { scaleX: next, scaleY: next });
+    });
+  };
+
   return (
-    <div className="px-3 py-4">
-      <div className="text-center mb-4">
+    <div className="px-3 py-4 space-y-4">
+      <div className="text-center">
         <div className="text-2xl font-bold text-white">{els.length}</div>
         <div className="text-xs text-white/40">elementos selecionados</div>
       </div>
-      <div className="flex gap-1 mb-4">
-        <button onClick={() => rotateElements(ids, 15)} className="icon-btn flex-1 text-xs flex flex-col items-center gap-0.5">
-          <RotateCwIcon size={13} /> +15°
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-5 gap-1">
+        <button onClick={() => rotateElements(ids, 15)} className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5">
+          <RotateCwIcon size={12} /> <span>+15°</span>
         </button>
-        <button onClick={() => duplicateElements(ids)} className="icon-btn flex-1 text-xs flex flex-col items-center gap-0.5">
-          <CopyIcon size={13} /> Copiar
+        <button onClick={() => duplicateElements(ids)} className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5">
+          <CopyIcon size={12} /> <span>Copiar</span>
         </button>
-        <button onClick={() => removeElements(ids)} className="icon-btn flex-1 text-xs flex flex-col items-center gap-0.5 hover:text-red-400">
-          <Trash2Icon size={13} /> Remover
+        <button
+          onClick={() => bringToFront(ids)}
+          className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 text-blue-400 hover:text-blue-300"
+          title="Trazer para Frente"
+        >
+          <span>⬆️</span> <span>Frente</span>
+        </button>
+        <button
+          onClick={() => sendToBack(ids)}
+          className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 text-amber-400 hover:text-amber-300"
+          title="Enviar para Trás"
+        >
+          <span>⬇️</span> <span>Atrás</span>
+        </button>
+        <button onClick={() => removeElements(ids)} className="icon-btn text-[10px] flex flex-col items-center gap-0.5 py-1 px-0.5 hover:text-red-400">
+          <Trash2Icon size={12} /> <span>Apagar</span>
         </button>
       </div>
+
+      {/* Alignment & Distribution */}
+      <div>
+        <div className="panel-label mb-1.5">Alinhamento & Distribuição</div>
+        <div className="grid grid-cols-3 gap-1">
+          <button
+            onClick={alignSelectedY}
+            className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-semibold border border-slate-700 flex flex-col items-center gap-0.5 transition-colors"
+            title="Alinhar todos na mesma altura horizontal (Y)"
+          >
+            <span>⬍ Alinhar Y</span>
+          </button>
+          <button
+            onClick={alignSelectedX}
+            className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-[11px] font-semibold border border-slate-700 flex flex-col items-center gap-0.5 transition-colors"
+            title="Alinhar todos no mesmo centro vertical (X)"
+          >
+            <span>⬌ Alinhar X</span>
+          </button>
+          <button
+            onClick={distributeSelectedHorizontal}
+            className="px-2 py-1.5 bg-afina-500/20 hover:bg-afina-500/30 text-afina-300 rounded-md text-[11px] font-semibold border border-afina-500/40 flex flex-col items-center gap-0.5 transition-colors"
+            title="Distribuir espaçamento idêntico entre os refletores"
+          >
+            <span>↔ Distribuir</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Batch Scale Control */}
+      <div className="panel-label mb-2">Escala (todos)</div>
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => applyScaleMultiplier(0.9)}
+            className="icon-btn text-xs px-2 py-1 font-bold"
+            title="Reduzir 10%"
+          >−</button>
+          <input
+            type="range"
+            min={0.1}
+            max={5}
+            step={0.05}
+            value={avgScale}
+            onChange={(e) => applyScaleToAll(Number(e.target.value))}
+            className="flex-1 accent-afina-500 h-1.5"
+          />
+          <button
+            onClick={() => applyScaleMultiplier(1.1)}
+            className="icon-btn text-xs px-2 py-1 font-bold"
+            title="Aumentar 10%"
+          >+</button>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            step={0.1}
+            min={0.1}
+            max={10}
+            value={Number(avgScale.toFixed(2))}
+            onChange={(e) => applyScaleToAll(Number(e.target.value))}
+            className="input-field font-mono text-xs flex-1"
+          />
+          <span className="text-[10px] text-white/30">escala</span>
+          <button
+            onClick={() => applyScaleToAll(1)}
+            className="icon-btn text-[10px] px-2 py-1"
+            title="Resetar para escala 1.0"
+          >Reset</button>
+        </div>
+        <div className="flex gap-1">
+          {[0.5, 0.75, 1, 1.5, 2, 3].map((s) => (
+            <button
+              key={s}
+              onClick={() => applyScaleToAll(s)}
+              className={`flex-1 text-[10px] py-1 rounded border transition-colors ${
+                Math.abs(avgScale - s) < 0.05
+                  ? 'border-afina-500 bg-afina-500/20 text-afina-400'
+                  : 'border-editor-border bg-editor-raised text-white/50 hover:text-white/80'
+              }`}
+            >{s}×</button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-editor-raised rounded-lg p-3 border border-editor-border text-xs">
         <div className="flex justify-between text-white/50 mb-1">
           <span>Carga total:</span>

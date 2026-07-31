@@ -21,6 +21,8 @@ const LightingCanvas = dynamic(() => import('@/components/canvas/LightingCanvas'
   ),
 });
 
+import { PranchaoModal } from '@/components/editor/PranchaoModal';
+
 export default function EditorPage() {
   useKeyboardShortcuts();
 
@@ -32,6 +34,7 @@ export default function EditorPage() {
       <PropertyInspector />
       <TechnicalSeal />
       <NewMapModal />
+      <PranchaoModal />
     </div>
   );
 }

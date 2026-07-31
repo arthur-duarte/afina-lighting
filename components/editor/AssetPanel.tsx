@@ -16,24 +16,26 @@ import {
 
 // ── ACCORDION SECTION ─────────────────────────────────────
 function AccordionSection({
-  title, icon, children, defaultOpen = false,
+  title, icon, children, defaultOpen = false, isOpenProp,
 }: {
-  title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean;
+  title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean; isOpenProp?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const isOpen = isOpenProp !== undefined ? isOpenProp : open;
+
   return (
     <div className="border-b border-editor-border">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-editor-hover transition-colors text-left"
       >
         <span className="text-white/50">{icon}</span>
         <span className="text-xs font-semibold text-white/70 flex-1">{title}</span>
-        {open
+        {isOpen
           ? <ChevronDownIcon size={12} className="text-white/30" />
           : <ChevronRightIcon size={12} className="text-white/30" />}
       </button>
-      {open && <div className="pb-2">{children}</div>}
+      {isOpen && <div className="pb-2">{children}</div>}
     </div>
   );
 }
@@ -216,33 +218,42 @@ function LayerPanel() {
   const { layers, activeLayerId, toggleLayerVisibility, toggleLayerLock, setActiveLayer } = useEditorStore();
 
   return (
-    <div className="px-2 py-1 space-y-0.5">
+    <div className="px-2 py-2 space-y-1">
       {layers.map((layer) => (
         <div
           key={layer.id}
           onClick={() => setActiveLayer(layer.id)}
-          className={`layer-item rounded-md cursor-pointer ${
-            activeLayerId === layer.id ? 'bg-editor-active border-l-2' : ''
+          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+            activeLayerId === layer.id
+              ? 'bg-afina-500/10 border-afina-500 text-slate-900 font-semibold'
+              : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
           }`}
-          style={activeLayerId === layer.id ? { borderLeftColor: layer.color } : {}}
         >
           <div
-            className="w-2 h-2 rounded-full flex-shrink-0"
+            className="w-3 h-3 rounded-full flex-shrink-0 border border-slate-300"
             style={{ backgroundColor: layer.color }}
           />
-          <span className="text-xs text-white/70 flex-1 truncate">{layer.label}</span>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-xs flex-1 truncate">{layer.label}</span>
+          <div className="flex items-center gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); toggleLayerVisibility(layer.id); }}
-              className="text-white/40 hover:text-white text-[10px] px-1"
-              title={layer.visible ? 'Ocultar' : 'Exibir'}
+              className={`p-1 text-xs rounded transition-colors ${
+                layer.visible
+                  ? 'text-slate-700 hover:text-slate-900 bg-slate-100'
+                  : 'text-slate-400 bg-slate-200/50'
+              }`}
+              title={layer.visible ? 'Ocultar Camada' : 'Exibir Camada'}
             >
-              {layer.visible ? '👁' : '○'}
+              {layer.visible ? '👁' : '🚫'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); toggleLayerLock(layer.id); }}
-              className="text-white/40 hover:text-white text-[10px] px-1"
-              title={layer.locked ? 'Desbloquear' : 'Bloquear'}
+              className={`p-1 text-xs rounded transition-colors ${
+                layer.locked
+                  ? 'text-amber-600 bg-amber-100 font-bold'
+                  : 'text-slate-400 hover:text-slate-700 bg-slate-100'
+              }`}
+              title={layer.locked ? 'Desbloquear Camada' : 'Bloquear Camada'}
             >
               {layer.locked ? '🔒' : '🔓'}
             </button>
@@ -257,6 +268,7 @@ function LayerPanel() {
 export function AssetPanel() {
   const { selectedTab, setSelectedTab } = useEditorStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandAll, setExpandAll] = useState(true);
   type Tab = 'library' | 'layers' | 'patch' | 'legend';
 
   const categories: FixtureCategory[] = ['conventional', 'led', 'moving', 'vintage', 'effect'];
@@ -298,9 +310,9 @@ export function AssetPanel() {
       <div className="flex-1 overflow-y-auto">
         {selectedTab === 'library' && (
           <>
-            {/* Search Box */}
-            <div className="p-2 border-b border-editor-border bg-slate-900/40">
-              <div className="relative">
+            {/* Search Box & Expand/Collapse Toggle */}
+            <div className="p-2 border-b border-editor-border bg-slate-900/40 flex items-center gap-1.5">
+              <div className="relative flex-1">
                 <SearchIcon size={13} className="absolute left-2.5 top-2.5 text-slate-400" />
                 <input
                   type="text"
@@ -318,6 +330,13 @@ export function AssetPanel() {
                   </button>
                 )}
               </div>
+              <button
+                onClick={() => setExpandAll(!expandAll)}
+                className="px-2 py-1.5 text-[10px] font-bold rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1 flex-shrink-0"
+                title={expandAll ? 'Recolher todas as categorias' : 'Expandir todas as categorias'}
+              >
+                {expandAll ? ' Collapse' : ' Expand'}
+              </button>
             </div>
 
             {searchQuery ? (
@@ -334,7 +353,7 @@ export function AssetPanel() {
             ) : (
               <div>
                 {/* Stage Presets */}
-                <AccordionSection title="Arquitetura & Palcos" icon={<Grid3x3Icon size={13} />} defaultOpen>
+                <AccordionSection title="Arquitetura & Palcos" icon={<Grid3x3Icon size={13} />} defaultOpen isOpenProp={expandAll}>
                   <div className="space-y-0.5">
                     {STAGE_PRESETS.map((preset) => (
                       <StageCard key={preset.id} preset={preset} />
@@ -344,7 +363,7 @@ export function AssetPanel() {
                 </AccordionSection>
 
                 {/* Cenografia e Objetos */}
-                <AccordionSection title="Cenografia & Formas Gerais" icon={<BoxIcon size={13} />} defaultOpen>
+                <AccordionSection title="Cenografia & Formas Gerais" icon={<BoxIcon size={13} />} defaultOpen isOpenProp={expandAll}>
                   <div className="space-y-0.5">
                     {getFixturesByCategory('architecture')
                       .filter((f) => f.type.startsWith('scenery'))
@@ -355,7 +374,7 @@ export function AssetPanel() {
                 </AccordionSection>
 
                 {/* Rigging */}
-                <AccordionSection title="Rigging & Estruturas" icon={<ZapIcon size={13} />} defaultOpen>
+                <AccordionSection title="Rigging & Estruturas" icon={<ZapIcon size={13} />} defaultOpen isOpenProp={expandAll}>
                   <div className="space-y-0.5">
                     {getFixturesByCategory('rigging').map((f) => (
                       <FixtureCard key={f.type} {...f} />
@@ -370,6 +389,7 @@ export function AssetPanel() {
                     title={CATEGORY_LABELS[cat]}
                     icon={<ZapIcon size={13} />}
                     defaultOpen={cat === 'conventional'}
+                    isOpenProp={expandAll}
                   >
                     <div className="space-y-0.5">
                       {getFixturesByCategory(cat).map((f) => (
@@ -380,7 +400,7 @@ export function AssetPanel() {
                 ))}
 
                 {/* Annotations */}
-                <AccordionSection title="Anotações & Texto" icon={<TypeIcon size={13} />} defaultOpen>
+                <AccordionSection title="Anotações & Texto" icon={<TypeIcon size={13} />} defaultOpen isOpenProp={expandAll}>
                   <div className="px-2 space-y-1">
                     <button
                       onClick={() => {

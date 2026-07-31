@@ -18,6 +18,7 @@ import {
   SaveIcon, LayersIcon, FolderOpenIcon, SunIcon, MoonIcon,
   EyeIcon, AlertTriangleIcon, Zap, ChevronDownIcon,
   UploadIcon, CloudIcon, CheckCircle2Icon, SparklesIcon,
+  MousePointerIcon, HandIcon,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -29,6 +30,7 @@ declare global {
 
 export function TopBar() {
   const {
+    activeTool, setActiveTool,
     undo, redo, historyIndex, history,
     colorTheme, setColorTheme,
     backstageMode, toggleBackstageMode,
@@ -250,23 +252,48 @@ export function TopBar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* ── POWER MODULE ──────────────────────── */}
-      <div className="flex items-center gap-3 mr-2 px-3 py-1 bg-editor-raised rounded-lg border border-editor-border">
+      {/* ── POWER MODULE (ALTO CONTRASTE) ──────────────────────── */}
+      <div className="flex items-center gap-2.5 mr-2 px-3 py-1 bg-slate-900 text-white rounded-lg border border-slate-700 shadow-sm">
         <div className="flex items-center gap-1.5">
-          <ZapIcon size={13} className="text-yellow-400" />
-          <span className="font-mono text-xs text-yellow-300">
+          <ZapIcon size={14} className="text-amber-400 fill-amber-400" />
+          <span className="font-mono text-xs font-extrabold text-amber-300">
             {formatWatts(totalWatts)}
           </span>
         </div>
-        <div className="w-px h-4 bg-editor-border" />
-        <div className="flex flex-col items-end">
-          <span className="font-mono text-[10px] text-white/50">
-            {formatAmperes(totalWatts, 220)} <span className="text-white/30">220V</span>
-          </span>
-          <span className="font-mono text-[10px] text-white/50">
-            {formatAmperes(totalWatts, 110)} <span className="text-white/30">110V</span>
-          </span>
+        <div className="w-px h-4 bg-slate-700" />
+        <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-slate-200">
+          <span>{formatAmperes(totalWatts, 220)} <span className="text-slate-400 font-normal">@ 220V</span></span>
+          <span className="text-slate-600">|</span>
+          <span>{formatAmperes(totalWatts, 110)} <span className="text-slate-400 font-normal">@ 110V</span></span>
         </div>
+      </div>
+
+      {/* ── TOOL SELECTION (SELEÇÃO & MÃOZINHA) ─────────── */}
+      <div className="flex items-center gap-0.5 bg-editor-raised rounded-lg p-0.5 border border-editor-border mr-2">
+        <button
+          onClick={() => setActiveTool('select')}
+          title="Ferramenta Seleção (V)"
+          className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded-md transition-colors ${
+            activeTool === 'select'
+              ? 'bg-afina-500 text-white font-bold'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <MousePointerIcon size={14} />
+          <span>Seleção</span>
+        </button>
+        <button
+          onClick={() => setActiveTool('pan')}
+          title="Mãozinha — Panorâmica / Clicar e Arrastar Canvas (H / Espaço)"
+          className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded-md transition-colors ${
+            activeTool === 'pan'
+              ? 'bg-afina-500 text-white font-bold'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <HandIcon size={14} />
+          <span>Mãozinha</span>
+        </button>
       </div>
 
       {/* ── QUICK ACTIONS ─────────────────────── */}
@@ -324,6 +351,19 @@ export function TopBar() {
           <ZapIcon size={13} className={colorTheme === 'backstage' ? 'text-red-400' : 'text-white/40'} />
         </button>
       </div>
+
+      {/* Modo Pranchão Button */}
+      <button
+        onClick={togglePranchaoMode}
+        title="Modo Pranchão — Leitura em Tela Cheia para Afinação em Tablet"
+        className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 ml-1.5 ${
+          pranchaoMode
+            ? 'bg-afina-600 border-afina-400 text-white shadow-md'
+            : 'bg-editor-raised border-editor-border text-white/70 hover:text-white hover:border-slate-500'
+        }`}
+      >
+        📋 Pranchão (Afinação)
+      </button>
 
       <div className="w-px h-5 bg-editor-border mx-1" />
 

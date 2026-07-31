@@ -96,6 +96,7 @@ const initialState: EditorState = {
   gridSize: 500,
   gridPixelsPerMeter: 50,
   snapEnabled: true,
+  rulerVisible: true,
 
   activeTool: 'select',
   pendingFixtureType: undefined,
@@ -111,6 +112,7 @@ const initialState: EditorState = {
 
   colorTheme: 'light',
   backstageMode: false,
+  pranchaoMode: false,
   showFocusCoverage: false,
   showFixtureLabels: false,
   showNewMapModal: false,
@@ -133,9 +135,10 @@ interface EditorStore extends EditorState {
   resetView: () => void;
   fitStageToScreen: (canvasW?: number, canvasH?: number) => void;
 
-  // Grid & Tools
+  // Grid & Tools & Régua
   toggleGrid: () => void;
   toggleSnap: () => void;
+  toggleRuler: () => void;
   setActiveTool: (tool: ToolMode, fixtureType?: FixtureType) => void;
 
   // Elements CRUD
@@ -143,6 +146,8 @@ interface EditorStore extends EditorState {
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   removeElements: (ids: string[]) => void;
   duplicateElements: (ids: string[]) => void;
+  copyElements: (ids?: string[]) => void;
+  pasteElements: () => void;
   clearCanvas: () => void;
 
   // Selection
@@ -163,6 +168,7 @@ interface EditorStore extends EditorState {
   // UI State
   setColorTheme: (theme: 'dark' | 'light' | 'backstage') => void;
   toggleBackstageMode: () => void;
+  togglePranchaoMode: () => void;
   toggleFocusCoverage: () => void;
   toggleFixtureLabels: () => void;
   setShowNewMapModal: (show: boolean) => void;
@@ -172,11 +178,14 @@ interface EditorStore extends EditorState {
   // Technical Seal
   updateSeal: (updates: Partial<TechnicalSeal>) => void;
 
-  // Canvas operations
+  // Canvas operations (Alignment & Ordering)
   groupElements: (ids: string[]) => void;
   rotateElements: (ids: string[], degrees: number) => void;
   bringToFront: (ids: string[]) => void;
   sendToBack: (ids: string[]) => void;
+  alignSelectedX: () => void;
+  alignSelectedY: () => void;
+  distributeSelectedHorizontal: () => void;
 
   // Snap helper
   snapToGrid: (value: number) => number;
@@ -287,6 +296,7 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       updateElement: (id, updates) => {
+        get().pushHistory();
         set((s) => ({
           elements: s.elements.map((el) =>
             el.id === id ? { ...el, ...updates } : el
@@ -305,17 +315,52 @@ export const useEditorStore = create<EditorStore>()(
       duplicateElements: (ids) => {
         const { elements } = get();
         const toDuplicate = elements.filter((el) => ids.includes(el.id));
-        const duplicated: CanvasElement[] = toDuplicate.map((el) => ({
-          ...el,
-          id: uuidv4(),
-          x: el.x + 20,
-          y: el.y + 20,
-          label: el.label ? `${el.label} cópia` : '',
-        }));
+        if (toDuplicate.length === 0) return;
+
         get().pushHistory();
+
+        // Calculate offset: perpendicular along horizontal X axis (50px right), same Y plane
+        const duplicated: CanvasElement[] = toDuplicate.map((el) => ({
+          ...JSON.parse(JSON.stringify(el)),
+          id: uuidv4(),
+          x: el.x + 50,
+          y: el.y, // Keep exact horizontal Y alignment!
+          label: el.label || '', // Exact label replicated without appending 'cópia'
+        }));
+
         set((s) => ({
           elements: [...s.elements, ...duplicated],
           selectedIds: duplicated.map((el) => el.id),
+        }));
+      },
+
+      copyElements: (ids) => {
+        const { elements, selectedIds } = get();
+        const targetIds = ids && ids.length > 0 ? ids : selectedIds;
+        const toCopy = elements.filter((el) => targetIds.includes(el.id));
+        if (toCopy.length === 0) return;
+
+        set({ clipboard: JSON.parse(JSON.stringify(toCopy)) });
+      },
+
+      pasteElements: () => {
+        const { clipboard, elements } = get();
+        if (!clipboard || clipboard.length === 0) return;
+
+        get().pushHistory();
+
+        // Paste offset 50px horizontally to the right along X axis, same Y
+        const pasted: CanvasElement[] = clipboard.map((el) => ({
+          ...JSON.parse(JSON.stringify(el)),
+          id: uuidv4(),
+          x: el.x + 50,
+          y: el.y, // Perpendicular horizontal row
+        }));
+
+        set((s) => ({
+          elements: [...s.elements, ...pasted],
+          selectedIds: pasted.map((el) => el.id),
+          clipboard: pasted, // Update clipboard position so repeated Ctrl+V continues stepping right
         }));
       },
 
@@ -349,8 +394,17 @@ export const useEditorStore = create<EditorStore>()(
       pushHistory: () => {
         set((s) => {
           const newHistory = s.history.slice(0, s.historyIndex + 1);
-          newHistory.push(JSON.parse(JSON.stringify(s.elements)));
+          const currentSnapshot = JSON.parse(JSON.stringify(s.elements));
+
+          // Ignore duplicate snapshot if state didn't change
+          const lastSnapshot = newHistory[newHistory.length - 1];
+          if (lastSnapshot && JSON.stringify(lastSnapshot) === JSON.stringify(currentSnapshot)) {
+            return {};
+          }
+
+          newHistory.push(currentSnapshot);
           if (newHistory.length > MAX_HISTORY) newHistory.shift();
+
           return {
             history: newHistory,
             historyIndex: newHistory.length - 1,
@@ -438,6 +492,10 @@ export const useEditorStore = create<EditorStore>()(
       toggleLayerPanel: () =>
         set((s) => ({ layerPanelOpen: !s.layerPanelOpen })),
 
+      toggleRuler: () => set((s) => ({ rulerVisible: !s.rulerVisible })),
+
+      togglePranchaoMode: () => set((s) => ({ pranchaoMode: !s.pranchaoMode })),
+
       setSelectedTab: (tab) => set({ selectedTab: tab }),
 
       // ── TECHNICAL SEAL ───────────────────────────────────────
@@ -450,6 +508,7 @@ export const useEditorStore = create<EditorStore>()(
       },
 
       rotateElements: (ids, degrees) => {
+        get().pushHistory();
         set((s) => ({
           elements: s.elements.map((el) =>
             ids.includes(el.id)
@@ -473,6 +532,55 @@ export const useEditorStore = create<EditorStore>()(
         const rest = elements.filter((el) => !ids.includes(el.id));
         get().pushHistory();
         set({ elements: [...targets, ...rest] });
+      },
+
+      alignSelectedX: () => {
+        const { elements, selectedIds } = get();
+        if (selectedIds.length <= 1) return;
+        get().pushHistory();
+        const targets = elements.filter((el) => selectedIds.includes(el.id));
+        const avgX = Math.round(targets.reduce((s, e) => s + e.x, 0) / targets.length);
+        set((s) => ({
+          elements: s.elements.map((el) =>
+            selectedIds.includes(el.id) ? { ...el, x: avgX } : el
+          ),
+        }));
+      },
+
+      alignSelectedY: () => {
+        const { elements, selectedIds } = get();
+        if (selectedIds.length <= 1) return;
+        get().pushHistory();
+        const targets = elements.filter((el) => selectedIds.includes(el.id));
+        const avgY = Math.round(targets.reduce((s, e) => s + e.y, 0) / targets.length);
+        set((s) => ({
+          elements: s.elements.map((el) =>
+            selectedIds.includes(el.id) ? { ...el, y: avgY } : el
+          ),
+        }));
+      },
+
+      distributeSelectedHorizontal: () => {
+        const { elements, selectedIds } = get();
+        if (selectedIds.length <= 2) return;
+        get().pushHistory();
+        const targets = [...elements.filter((el) => selectedIds.includes(el.id))].sort(
+          (a, b) => a.x - b.x
+        );
+        const minX = targets[0].x;
+        const maxX = targets[targets.length - 1].x;
+        const step = (maxX - minX) / (targets.length - 1);
+
+        const newPosMap = new Map<string, number>();
+        targets.forEach((el, index) => {
+          newPosMap.set(el.id, Math.round(minX + index * step));
+        });
+
+        set((s) => ({
+          elements: s.elements.map((el) =>
+            newPosMap.has(el.id) ? { ...el, x: newPosMap.get(el.id)! } : el
+          ),
+        }));
       },
 
       // ── DMX ──────────────────────────────────────────────────────

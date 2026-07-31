@@ -23,6 +23,18 @@ export function useKeyboardShortcuts() {
       if (ctrl && !shift && key === 'z') { e.preventDefault(); store.undo(); return; }
       if (ctrl && (key === 'y' || (shift && key === 'z'))) { e.preventDefault(); store.redo(); return; }
 
+      // ── COPY / PASTE ─────────────────────────────────────
+      if (ctrl && key === 'c') {
+        e.preventDefault();
+        store.copyElements();
+        return;
+      }
+      if (ctrl && key === 'v') {
+        e.preventDefault();
+        store.pasteElements();
+        return;
+      }
+
       // ── DUPLICATE ────────────────────────────────────────
       if (ctrl && key === 'd') {
         e.preventDefault();

@@ -213,7 +213,6 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
       }
 
       case 'ellipsoidal': {
-        const angle = el.angle ?? 26;
         const size = 18;
         return (
           <Group>
@@ -223,10 +222,6 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
             />
             <Line points={[0, size * 0.7, -size * 0.5, size * 1.4]} stroke="#0f172a" strokeWidth={1} />
             <Line points={[0, size * 0.7, size * 0.5, size * 1.4]} stroke="#0f172a" strokeWidth={1} />
-            <Text
-              text={`${angle}°`} x={-10} y={-size * 0.35} fontSize={8} fontStyle="bold"
-              fill="#0f172a" fontFamily="JetBrains Mono, monospace"
-            />
           </Group>
         );
       }
@@ -397,7 +392,7 @@ function FixtureSymbol({ el, isSelected, onClick, onDragEnd }: {
         scaleY={el.scaleY}
         onClick={onClick}
         onTap={onClick}
-        draggable={!el.locked}
+        draggable={!el.locked && !(store.layers || []).find((l) => l.id === el.layerId)?.locked}
         onDragEnd={onDragEnd}
         onTransformEnd={handleTransformEnd}
       >
@@ -777,8 +772,20 @@ export default function LightingCanvas() {
     return activeLayerMap[layerId].visible;
   };
 
-  const visibleElements = elements.filter((el) => el.visible !== false && isLayerVisible(el.layerId));
-  const focusEls = showFocusCoverage ? visibleElements.filter((el) => (el.angle ?? 0) > 0) : [];
+  const layerOrderMap: Record<string, number> = {
+    layer_architecture: 1,
+    layer_rigging: 2,
+    layer_lighting: 3,
+    layer_annotations: 4,
+  };
+
+  const visibleElements = [...elements]
+    .filter((el) => el.visible !== false && isLayerVisible(el.layerId))
+    .sort((a, b) => (layerOrderMap[a.layerId] || 3) - (layerOrderMap[b.layerId] || 3));
+
+  const focusEls = visibleElements.filter(
+    (el) => (el.angle ?? 0) > 0 && (el.showFocusCone || showFocusCoverage)
+  );
 
   // Fixture count summary for legend card
   const fixtureSummary: { label: string; color: string; count: number }[] = [];
@@ -885,6 +892,17 @@ export default function LightingCanvas() {
           title="Aumentar Zoom"
         >
           +
+        </button>
+        <button
+          onClick={() => store.setActiveTool(activeTool === 'pan' ? 'select' : 'pan')}
+          className={`px-2.5 h-7 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm ${
+            activeTool === 'pan'
+              ? 'bg-afina-600 text-white'
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+          }`}
+          title="Mãozinha — Clicar e Arrastar Tela (H / Espaço)"
+        >
+          ✋ Mãozinha
         </button>
         <button
           onClick={() => store.fitStageToScreen(dimensions.width, dimensions.height)}
