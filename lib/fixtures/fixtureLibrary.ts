@@ -19,6 +19,17 @@ export interface FixtureDefinition {
   colorHex: string;              // symbol color on canvas
 }
 
+export const CATEGORY_LABELS: Record<FixtureCategory, string> = {
+  conventional: 'Convencionais (Incandescente/Halógena)',
+  led: 'LED & Cor Variável',
+  moving: 'Moving Lights (Cabeças Móveis)',
+  vintage: 'Vintage & Especiais',
+  effect: 'Efeitos & Fumaça',
+  rigging: 'Rigging & Estruturas',
+  architecture: 'Arquitetura & Cenografia',
+  annotation: 'Anotações & Texto',
+};
+
 export const FIXTURE_LIBRARY: FixtureDefinition[] = [
   // ── CONVENCIONAIS ─────────────────────────────────────────
   {
