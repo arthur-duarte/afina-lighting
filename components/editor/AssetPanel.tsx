@@ -7,7 +7,7 @@ import { STAGE_PRESETS } from '@/lib/stages/stagePresets';
 import { PatchPanel } from './PatchPanel';
 import { DynamicLegend } from './DynamicLegend';
 import { SymbolIcon } from './SymbolIcon';
-import type { FixtureType } from '@/lib/types';
+import type { FixtureType, FixtureCategory } from '@/lib/types';
 import {
   ChevronDownIcon, ChevronRightIcon,
   Grid3x3Icon, PenToolIcon, TypeIcon,
@@ -259,7 +259,7 @@ export function AssetPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   type Tab = 'library' | 'layers' | 'patch' | 'legend';
 
-  const categories = ['conventional', 'led', 'moving', 'vintage', 'effect'];
+  const categories: FixtureCategory[] = ['conventional', 'led', 'moving', 'vintage', 'effect'];
 
   const searchResults = FIXTURE_LIBRARY.filter(
     (f) =>
