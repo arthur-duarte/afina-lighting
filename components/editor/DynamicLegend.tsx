@@ -62,7 +62,7 @@ export function DynamicLegend() {
           gelatinMap.set(el.gelatin, {
             code: el.gelatin,
             name: gelDef?.name ?? el.gelatin,
-            color: gelDef?.color ?? '#ffffff',
+            color: gelDef?.hex ?? '#ffffff',
             count: 1,
           });
         }
